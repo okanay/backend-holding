@@ -1,4 +1,4 @@
-package ImageRepository
+package FileRepository
 
 import (
 	"database/sql"

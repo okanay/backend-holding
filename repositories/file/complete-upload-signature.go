@@ -1,5 +1,4 @@
-// repositories/image/complete-upload-signature.go
-package ImageRepository
+package FileRepository
 
 import (
 	"context"
@@ -9,14 +8,14 @@ import (
 )
 
 // CompleteUploadSignature bir yükleme imzasını tamamlandı olarak işaretler ve resim ile ilişkilendirir
-func (r *Repository) CompleteUploadSignature(ctx context.Context, signatureID, imageID uuid.UUID) error {
+func (r *Repository) CompleteUploadSignature(ctx context.Context, signatureID uuid.UUID) error {
 	query := `
-		UPDATE upload_signatures
-		SET completed = true, image_id = $1
-		WHERE id = $2
+		UPDATE files_signatures
+		SET completed = true
+		WHERE id = $1
 	`
 
-	result, err := r.db.ExecContext(ctx, query, imageID, signatureID)
+	result, err := r.db.ExecContext(ctx, query, signatureID)
 	if err != nil {
 		return err
 	}

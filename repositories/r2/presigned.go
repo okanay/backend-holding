@@ -1,4 +1,4 @@
-// repositories/r2/generate-presigned-url.go
+// repositories/r2/presigned.go
 package R2Repository
 
 import (
@@ -29,22 +29,28 @@ func (r *Repository) GeneratePresignedURL(ctx context.Context, input types.Presi
 	safeFilename := sanitizeFilename(input.Filename)
 
 	// Rastgele hash oluştur (6 karakter)
-	hashSuffix := utils.GenerateRandomString(6)
+	hashSuffix := utils.GenerateRandomString(8)
 
 	// Final dosya adını oluştur: orijinal-dosya-adi-ABCDEF.jpg
 	finalFilename := fmt.Sprintf("%s-%s%s", safeFilename, hashSuffix, fileExt)
 
-	// Object key oluştur: {folderName}/{finalFilename}
-	objectKey := path.Join(r.folderName, finalFilename)
+	// File category'ye göre klasör yolu oluştur
+	var objectPath string
+	if input.FileCategory != "" {
+		objectPath = path.Join(r.folderName, input.FileCategory, finalFilename)
+	} else {
+		objectPath = path.Join(r.folderName, "general", finalFilename)
+	}
 
 	// Presigned URL için client oluştur
 	presignClient := s3.NewPresignClient(r.client)
 
 	// Presigned URL oluştur
 	putObjectRequest, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(r.bucketName),
-		Key:         aws.String(objectKey),
-		ContentType: aws.String(input.ContentType),
+		Bucket:        aws.String(r.bucketName),
+		Key:           aws.String(objectPath),
+		ContentType:   aws.String(input.ContentType),
+		ContentLength: &input.SizeInBytes,
 	}, func(opts *s3.PresignOptions) {
 		opts.Expires = time.Minute * 5
 	})
@@ -54,12 +60,12 @@ func (r *Repository) GeneratePresignedURL(ctx context.Context, input types.Presi
 	}
 
 	// Public erişim URL'sini oluştur
-	publicURL := fmt.Sprintf("%s/%s", r.publicURLBase, objectKey)
+	publicURL := fmt.Sprintf("%s/%s", r.publicURLBase, objectPath)
 
 	return &types.PresignedURLOutput{
 		PresignedURL: putObjectRequest.URL,
 		UploadURL:    publicURL,
-		ObjectKey:    objectKey,
+		ObjectKey:    objectPath,
 		ExpiresAt:    time.Now().Add(time.Minute * 5),
 	}, nil
 }

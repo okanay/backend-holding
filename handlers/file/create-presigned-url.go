@@ -1,34 +1,28 @@
-// handlers/image/create-presigned-url.go
-package ImageHandler
+// handlers/file/create-presigned-url.go
+package FileHandler
 
 import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/okanay/backend-holding/types"
+	"github.com/okanay/backend-holding/utils"
 )
 
 // CreatePresignedURL dosya yüklemek için presigned URL oluşturur
 func (h *Handler) CreatePresignedURL(c *gin.Context) {
 	var input types.CreatePresignedURLInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "invalid_input",
-			"message": "Geçersiz istek formatı: " + err.Error(),
-		})
+	err := utils.ValidateRequest(c, &input)
+	if err != nil {
 		return
 	}
 
-	// Kullanıcı ID'sini al
-	userID := c.MustGet("user_id").(uuid.UUID)
-
 	// Presigned URL oluştur
 	presignedOutput, err := h.R2Repository.GeneratePresignedURL(c.Request.Context(), types.PresignURLInput{
-		Filename:    input.Filename,
-		ContentType: input.ContentType,
-		SizeInBytes: input.SizeInBytes,
+		Filename:     input.Filename,
+		ContentType:  input.ContentType,
+		FileCategory: input.FileCategory,
+		SizeInBytes:  input.SizeInBytes,
 	})
 
 	if err != nil {
@@ -46,10 +40,11 @@ func (h *Handler) CreatePresignedURL(c *gin.Context) {
 		UploadURL:    presignedOutput.UploadURL,
 		Filename:     input.Filename,
 		FileType:     input.ContentType,
+		FileCategory: input.FileCategory,
 		ExpiresAt:    presignedOutput.ExpiresAt,
 	}
 
-	signatureID, err := h.ImageRepository.CreateUploadSignature(c.Request.Context(), userID, signatureInput)
+	signatureID, err := h.FileRepository.CreateUploadSignature(c.Request.Context(), signatureInput)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,

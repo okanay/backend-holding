@@ -1,5 +1,4 @@
-// repositories/image/delete-image.go
-package ImageRepository
+package FileRepository
 
 import (
 	"context"
@@ -9,15 +8,15 @@ import (
 )
 
 // DeleteImage bir resmi siler (veya durumunu 'deleted' olarak günceller)
-func (r *Repository) DeleteImage(ctx context.Context, imageID, userID uuid.UUID) error {
+func (r *Repository) DeleteFile(ctx context.Context, fileID uuid.UUID) error {
 	// Soft delete - durumu 'deleted' olarak güncelle
 	query := `
-		UPDATE images
+		UPDATE files
 		SET status = 'deleted', updated_at = NOW()
-		WHERE id = $1 AND user_id = $2
+		WHERE id = $1
 	`
 
-	result, err := r.db.ExecContext(ctx, query, imageID, userID)
+	result, err := r.db.ExecContext(ctx, query, fileID)
 	if err != nil {
 		return err
 	}

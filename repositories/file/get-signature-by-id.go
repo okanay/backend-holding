@@ -1,5 +1,4 @@
-// repositories/image/get-image-by-id.go
-package ImageRepository
+package FileRepository
 
 import (
 	"context"
@@ -11,20 +10,19 @@ import (
 
 func (r *Repository) GetSignatureByID(ctx context.Context, signatureID uuid.UUID) (*types.UploadSignature, error) {
 	query := `
-		SELECT id, user_id, image_id, presigned_url, upload_url, filename, file_type, expires_at, completed, created_at
-		FROM upload_signatures
+		SELECT id, presigned_url, upload_url, filename, file_type, file_category, expires_at, completed, created_at
+		FROM files_signatures
 		WHERE id = $1
 	`
 
 	var signature types.UploadSignature
 	err := r.db.QueryRowContext(ctx, query, signatureID).Scan(
 		&signature.ID,
-		&signature.UserID,
-		&signature.ImageID,
 		&signature.PresignedURL,
 		&signature.UploadURL,
 		&signature.Filename,
 		&signature.FileType,
+		&signature.FileCategory,
 		&signature.ExpiresAt,
 		&signature.Completed,
 		&signature.CreatedAt,
@@ -32,7 +30,7 @@ func (r *Repository) GetSignatureByID(ctx context.Context, signatureID uuid.UUID
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil // Resim bulunamadı
+			return nil, nil // Signature bulunamadı
 		}
 		return nil, err
 	}

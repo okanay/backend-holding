@@ -9,29 +9,27 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
-	// Proje modülleri
-
 	c "github.com/okanay/backend-holding/configs"
 	db "github.com/okanay/backend-holding/database"
-	"github.com/okanay/backend-holding/handlers"
-	ImageHandler "github.com/okanay/backend-holding/handlers/image"
-	UserHandler "github.com/okanay/backend-holding/handlers/user"
+	fh "github.com/okanay/backend-holding/handlers/file"
+	mh "github.com/okanay/backend-holding/handlers/main"
+	uh "github.com/okanay/backend-holding/handlers/user"
 	mw "github.com/okanay/backend-holding/middlewares"
-	AIRepository "github.com/okanay/backend-holding/repositories/ai"
-	ImageRepository "github.com/okanay/backend-holding/repositories/image"
-	R2Repository "github.com/okanay/backend-holding/repositories/r2"
-	TokenRepository "github.com/okanay/backend-holding/repositories/token"
-	UserRepository "github.com/okanay/backend-holding/repositories/user"
+	air "github.com/okanay/backend-holding/repositories/ai"
+	fr "github.com/okanay/backend-holding/repositories/file"
+	r2r "github.com/okanay/backend-holding/repositories/r2"
+	tr "github.com/okanay/backend-holding/repositories/token"
+	ur "github.com/okanay/backend-holding/repositories/user"
 	"github.com/okanay/backend-holding/services/cache"
 )
 
 // Uygulama bileşenlerini gruplamak için yapılar
 type Repositories struct {
-	User  *UserRepository.Repository
-	Token *TokenRepository.Repository
-	AI    *AIRepository.Repository
-	Image *ImageRepository.Repository
-	R2    *R2Repository.Repository
+	User  *ur.Repository
+	Token *tr.Repository
+	AI    *air.Repository
+	File  *fr.Repository
+	R2    *r2r.Repository
 }
 
 type Services struct {
@@ -39,9 +37,9 @@ type Services struct {
 }
 
 type Handlers struct {
-	Main  *handlers.Handler
-	User  *UserHandler.Handler
-	Image *ImageHandler.Handler
+	Main *mh.Handler
+	User *uh.Handler
+	File *fh.Handler
 }
 
 func main() {
@@ -63,10 +61,10 @@ func main() {
 	r := initRepositories(sqlDB)
 
 	// 4. Servis Katmanını Başlat
-	s := initServices(r)
+	_ = initServices()
 
 	// 5. Handler Katmanını Başlat
-	h := initHandlers(r, s)
+	h := initHandlers(r)
 
 	// 6. Router ve Middleware Yapılandırması
 	router := gin.Default()
@@ -88,15 +86,6 @@ func main() {
 	auth.GET("/logout", h.User.Logout)
 	auth.GET("/get-me", h.User.GetMe)
 
-	// Image Routes
-	imageAuth := auth.Group("/images")
-	{
-		imageAuth.POST("/presign", h.Image.CreatePresignedURL)
-		imageAuth.POST("/confirm", h.Image.ConfirmUpload)
-		imageAuth.GET("", h.Image.GetUserImages)
-		imageAuth.DELETE("/:id", h.Image.DeleteImage)
-	}
-
 	// 7. Sunucuyu Başlat
 	port := os.Getenv("PORT")
 	log.Printf("[SERVER]: %s portu üzerinde dinleniyor...", port)
@@ -109,11 +98,11 @@ func main() {
 // Repository'lerin başlatılması
 func initRepositories(sqlDB *sql.DB) Repositories {
 	return Repositories{
-		User:  UserRepository.NewRepository(sqlDB),
-		Token: TokenRepository.NewRepository(sqlDB),
-		AI:    AIRepository.NewRepository(os.Getenv("OPENAI_API_KEY")),
-		Image: ImageRepository.NewRepository(sqlDB),
-		R2: R2Repository.NewRepository(
+		User:  ur.NewRepository(sqlDB),
+		Token: tr.NewRepository(sqlDB),
+		AI:    air.NewRepository(os.Getenv("OPENAI_API_KEY")),
+		File:  fr.NewRepository(sqlDB),
+		R2: r2r.NewRepository(
 			os.Getenv("R2_ACCOUNT_ID"),
 			os.Getenv("R2_ACCESS_KEY_ID"),
 			os.Getenv("R2_ACCESS_KEY_SECRET"),
@@ -126,7 +115,7 @@ func initRepositories(sqlDB *sql.DB) Repositories {
 }
 
 // Servislerin başlatılması
-func initServices(repos Repositories) Services {
+func initServices() Services {
 	// Cache ve servis oluştur
 	blogCache := cache.NewCache(30 * time.Minute)
 
@@ -136,10 +125,10 @@ func initServices(repos Repositories) Services {
 }
 
 // Handler'ların başlatılması
-func initHandlers(repos Repositories, services Services) Handlers {
+func initHandlers(repos Repositories) Handlers {
 	return Handlers{
-		Main:  handlers.NewHandler(),
-		User:  UserHandler.NewHandler(repos.User, repos.Token),
-		Image: ImageHandler.NewHandler(repos.Image, repos.R2),
+		Main: mh.NewHandler(),
+		User: uh.NewHandler(repos.User, repos.Token),
+		File: fh.NewHandler(repos.File, repos.R2),
 	}
 }

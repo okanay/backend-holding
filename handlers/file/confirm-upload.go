@@ -1,5 +1,5 @@
-// handlers/image/confirm-upload.go
-package ImageHandler
+// handlers/file/confirm-upload.go
+package FileHandler
 
 import (
 	"net/http"
@@ -7,21 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/okanay/backend-holding/types"
+	"github.com/okanay/backend-holding/utils"
 )
 
 func (h *Handler) ConfirmUpload(c *gin.Context) {
 	var input types.ConfirmUploadInput
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "invalid_input",
-			"message": "Geçersiz istek formatı: " + err.Error(),
-		})
+	err := utils.ValidateRequest(c, &input)
+	if err != nil {
 		return
 	}
-
-	// Kullanıcı ID'sini al
-	userID := c.MustGet("user_id").(uuid.UUID)
 
 	// SignatureID'yi UUID'ye dönüştür
 	signatureID, err := uuid.Parse(input.SignatureID)
@@ -34,7 +28,7 @@ func (h *Handler) ConfirmUpload(c *gin.Context) {
 		return
 	}
 
-	signature, err := h.ImageRepository.GetSignatureByID(c.Request.Context(), signatureID)
+	signature, err := h.FileRepository.GetSignatureByID(c.Request.Context(), signatureID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -44,38 +38,36 @@ func (h *Handler) ConfirmUpload(c *gin.Context) {
 		return
 	}
 
-	if signature.UserID != userID {
-		c.JSON(http.StatusForbidden, gin.H{
+	if signature == nil {
+		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
-			"error":   "permission_denied",
-			"message": "Bu yükleme işlemi için yetkiniz yok",
+			"error":   "signature_not_found",
+			"message": "İmza kaydı bulunamadı",
 		})
 		return
 	}
 
-	// Resmi veritabanına kaydet
-	imageInput := types.SaveImageInput{
-		URL:         input.URL,
-		Filename:    signature.Filename,
-		AltText:     input.AltText,
-		FileType:    signature.FileType,
-		SizeInBytes: input.SizeInBytes,
-		Width:       input.Width,
-		Height:      input.Height,
+	// Dosyayı veritabanına kaydet
+	fileInput := types.SaveFileInput{
+		URL:          input.URL,
+		Filename:     signature.Filename,
+		FileType:     signature.FileType,
+		FileCategory: signature.FileCategory,
+		SizeInBytes:  input.SizeInBytes,
 	}
 
-	imageID, err := h.ImageRepository.SaveImage(c.Request.Context(), userID, imageInput)
+	fileID, err := h.FileRepository.SaveFile(c.Request.Context(), fileInput)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
-			"error":   "image_save_failed",
-			"message": "Resim kaydedilemedi: " + err.Error(),
+			"error":   "file_save_failed",
+			"message": "Dosya kaydedilemedi: " + err.Error(),
 		})
 		return
 	}
 
 	// İmza kaydını tamamlandı olarak işaretle
-	err = h.ImageRepository.CompleteUploadSignature(c.Request.Context(), signatureID, imageID)
+	err = h.FileRepository.CompleteUploadSignature(c.Request.Context(), signatureID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -89,7 +81,7 @@ func (h *Handler) ConfirmUpload(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"id":  imageID.String(),
+			"id":  fileID.String(),
 			"url": input.URL,
 		},
 	})

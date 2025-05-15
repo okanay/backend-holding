@@ -1,4 +1,4 @@
-package ImageRepository
+package FileRepository
 
 import (
 	"context"
@@ -7,13 +7,12 @@ import (
 	"github.com/okanay/backend-holding/types"
 )
 
-func (r *Repository) CreateUploadSignature(ctx context.Context, userID uuid.UUID, input types.UploadSignatureInput) (uuid.UUID, error) {
-
+func (r *Repository) CreateUploadSignature(ctx context.Context, input types.UploadSignatureInput) (uuid.UUID, error) {
 	var id uuid.UUID
 
 	query := `
-		INSERT INTO upload_signatures (
-			user_id, presigned_url, upload_url, filename, file_type, expires_at
+		INSERT INTO files_signatures (
+			presigned_url, upload_url, filename, file_type, file_category, expires_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6
 		) RETURNING id
@@ -22,11 +21,11 @@ func (r *Repository) CreateUploadSignature(ctx context.Context, userID uuid.UUID
 	err := r.db.QueryRowContext(
 		ctx,
 		query,
-		userID,
 		input.PresignedURL,
 		input.UploadURL,
 		input.Filename,
 		input.FileType,
+		input.FileCategory,
 		input.ExpiresAt,
 	).Scan(&id)
 
