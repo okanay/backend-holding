@@ -21,9 +21,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- USER TABLE INDEXES
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username);
-
 -- REFRESH TOKEN TABLE
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id UUID DEFAULT uuid_generate_v4 () PRIMARY KEY,
@@ -40,6 +37,9 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     revoked_reason TEXT,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+-- USER TABLE INDEXES
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username);
 
 -- REFRESH TOKEN TABLE INDEXES
 CREATE UNIQUE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens (token);
