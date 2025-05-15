@@ -60,7 +60,7 @@ func ValidateAccessToken(tokenString string) (*types.TokenClaims, error) {
 	claims := &JWTClaims{}
 
 	// Token'ı parse et ve doğrula
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		// Algoritma kontrolü (Sadece HS256 bekleniyor)
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -86,6 +86,48 @@ func ValidateAccessToken(tokenString string) (*types.TokenClaims, error) {
 	return &claims.TokenClaims, nil
 }
 
+func CreateApplicationTrackingToken(email string) (string, error) {
+	// Token süresi 30 gün
+	expiryTime := time.Now().Add(time.Hour * 24 * 30)
+
+	claims := jwt.MapClaims{
+		"email": email,
+		"exp":   expiryTime.Unix(),
+		"iat":   time.Now().Unix(),
+		"iss":   "holding-app",
+		"sub":   "application-tracking",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// .env dosyasındaki gizli anahtar kullanılır
+	secretKey := []byte(os.Getenv("JWT_APPLICATION_TRACKING_SECRET"))
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+// VerifyApplicationTrackingToken JWT'yi doğrular ve email döndürür
+func VerifyApplicationTrackingToken(tokenString string) (string, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
+		return []byte(os.Getenv("JWT_APPLICATION_TRACKING_SECRET")), nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		email := claims["email"].(string)
+		return email, nil
+	}
+
+	return "", errors.New("invalid token")
+}
+
 // IsTokenExpired, token'ın süresinin dolup dolmadığını kontrol eder
 func IsTokenExpired(tokenString string) (bool, error) {
 	// JWT için secret key'i çevresel değişkenlerden al
@@ -98,7 +140,7 @@ func IsTokenExpired(tokenString string) (bool, error) {
 	claims := &JWTClaims{}
 
 	// Token'ı parse et
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(secretKey), nil
 	})
 
@@ -151,7 +193,7 @@ func ShouldRefreshToken(tokenString string) (bool, error) {
 	claims := &JWTClaims{}
 
 	// Token'ı parse et
-	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(secretKey), nil
 	})
 
