@@ -12,15 +12,19 @@ import (
 	c "github.com/okanay/backend-holding/configs"
 	db "github.com/okanay/backend-holding/database"
 	fh "github.com/okanay/backend-holding/handlers/file"
+	jh "github.com/okanay/backend-holding/handlers/job"
 	mh "github.com/okanay/backend-holding/handlers/main"
 	uh "github.com/okanay/backend-holding/handlers/user"
+
 	"github.com/okanay/backend-holding/middlewares"
 	mw "github.com/okanay/backend-holding/middlewares"
 	air "github.com/okanay/backend-holding/repositories/ai"
 	fr "github.com/okanay/backend-holding/repositories/file"
+	jr "github.com/okanay/backend-holding/repositories/job"
 	r2r "github.com/okanay/backend-holding/repositories/r2"
 	tr "github.com/okanay/backend-holding/repositories/token"
 	ur "github.com/okanay/backend-holding/repositories/user"
+
 	"github.com/okanay/backend-holding/services/cache"
 )
 
@@ -30,6 +34,7 @@ type Repositories struct {
 	AI    *air.Repository
 	File  *fr.Repository
 	R2    *r2r.Repository
+	Job   *jr.Repository
 }
 
 type Services struct {
@@ -40,6 +45,7 @@ type Handlers struct {
 	Main *mh.Handler
 	User *uh.Handler
 	File *fh.Handler
+	Job  *jh.Handler
 }
 
 func main() {
@@ -136,6 +142,7 @@ func initRepositories(sqlDB *sql.DB) Repositories {
 		Token: tr.NewRepository(sqlDB),
 		AI:    air.NewRepository(os.Getenv("OPENAI_API_KEY")),
 		File:  fr.NewRepository(sqlDB),
+		Job:   jr.NewRepository(sqlDB),
 		R2: r2r.NewRepository(
 			os.Getenv("R2_ACCOUNT_ID"),
 			os.Getenv("R2_ACCESS_KEY_ID"),
@@ -163,6 +170,7 @@ func initHandlers(repos Repositories) Handlers {
 		Main: mh.NewHandler(),
 		User: uh.NewHandler(repos.User, repos.Token),
 		File: fh.NewHandler(repos.File, repos.R2),
+		Job:  jh.NewHandler(repos.File, repos.R2, repos.Job),
 	}
 }
 

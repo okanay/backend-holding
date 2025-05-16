@@ -10,12 +10,13 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-func (r *Repository) CreateJobApplication(ctx context.Context, jobID uuid.UUID, input types.JobApplicationInput) (*types.JobApplication, error) {
+func (r *Repository) CreateJobApplication(ctx context.Context, jobID uuid.UUID, input types.JobApplicationInput) (types.JobApplication, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Create Job Application")
+	var application types.JobApplication
 
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("işlem başlatılamadı: %w", err)
+		return application, fmt.Errorf("işlem başlatılamadı: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -25,7 +26,6 @@ func (r *Repository) CreateJobApplication(ctx context.Context, jobID uuid.UUID, 
 		RETURNING id, job_id, full_name, email, phone, form_type, form_json, status, created_at, updated_at
 	`
 
-	var application types.JobApplication
 	err = tx.QueryRowContext(
 		ctx,
 		createQuery,
@@ -49,7 +49,7 @@ func (r *Repository) CreateJobApplication(ctx context.Context, jobID uuid.UUID, 
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("başvuru oluşturulamadı: %w", err)
+		return application, fmt.Errorf("başvuru oluşturulamadı: %w", err)
 	}
 
 	historyQuery := `
@@ -74,12 +74,12 @@ func (r *Repository) CreateJobApplication(ctx context.Context, jobID uuid.UUID, 
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("başvuru durumu geçmişi oluşturulamadı: %w", err)
+		return application, fmt.Errorf("başvuru durumu geçmişi oluşturulamadı: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("işlem tamamlanamadı: %w", err)
+		return application, fmt.Errorf("işlem tamamlanamadı: %w", err)
 	}
 
-	return &application, nil
+	return application, nil
 }

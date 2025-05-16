@@ -11,12 +11,13 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID uuid.UUID) (*types.Job, error) {
+func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID uuid.UUID) (types.Job, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Create Job")
+	var job types.Job
 
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("işlem başlatılamadı: %w", err)
+		return job, fmt.Errorf("işlem başlatılamadı: %w", err)
 	}
 	defer tx.Rollback()
 
@@ -26,7 +27,6 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 		RETURNING id, user_id, slug, status, deadline, created_at, updated_at
 	`
 
-	var job types.Job
 	err = tx.QueryRowContext(
 		ctx,
 		query,
@@ -46,9 +46,9 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 
 	if err != nil {
 		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23505" && pgErr.Constraint == "job_postings_slug_key" {
-			return nil, fmt.Errorf("bu URL yapısı (%s) zaten kullanımda", input.Slug)
+			return job, fmt.Errorf("bu URL yapısı (%s) zaten kullanımda", input.Slug)
 		}
-		return nil, fmt.Errorf("iş ilanı oluşturulamadı: %w", err)
+		return job, fmt.Errorf("iş ilanı oluşturulamadı: %w", err)
 	}
 
 	detailsQuery := `
@@ -90,7 +90,7 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("iş ilanı detayları oluşturulamadı: %w", err)
+		return job, fmt.Errorf("iş ilanı detayları oluşturulamadı: %w", err)
 	}
 
 	if len(input.Categories) > 0 {
@@ -109,18 +109,18 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 		_, err = tx.ExecContext(ctx, categoryQuery, values...)
 		if err != nil {
 			if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23503" {
-				return nil, fmt.Errorf("belirtilen kategorilerden bazıları bulunamadı: %w", err)
+				return job, fmt.Errorf("belirtilen kategorilerden bazıları bulunamadı: %w", err)
 			}
-			return nil, fmt.Errorf("kategoriler eklenemedi: %w", err)
+			return job, fmt.Errorf("kategoriler eklenemedi: %w", err)
 		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		return nil, fmt.Errorf("işlem tamamlanamadı: %w", err)
+		return job, fmt.Errorf("işlem tamamlanamadı: %w", err)
 	}
 
 	job.Details = &details
 	job.Categories = input.Categories
 
-	return &job, nil
+	return job, nil
 }

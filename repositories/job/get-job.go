@@ -49,7 +49,7 @@ const jobBaseQuery = `
 `
 
 // scanJob - Ortak scan işlemi için yardımcı fonksiyon
-func scanJob(row *sql.Row) (*types.JobView, error) {
+func scanJob(row *sql.Row) (types.JobView, error) {
 	var job types.JobView
 	var details types.JobDetailsView
 	var categoriesJSON []byte
@@ -76,22 +76,22 @@ func scanJob(row *sql.Row) (*types.JobView, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil // İlan bulunamadı
+			return job, nil // İlan bulunamadı
 		}
-		return nil, fmt.Errorf("iş ilanı getirilirken hata: %w", err)
+		return job, fmt.Errorf("iş ilanı getirilirken hata: %w", err)
 	}
 
 	// Kategorileri ayrıştır
 	var categories []types.JobCategoryView
 	if err := json.Unmarshal(categoriesJSON, &categories); err != nil {
-		return nil, fmt.Errorf("kategoriler ayrıştırılamadı: %w", err)
+		return job, fmt.Errorf("kategoriler ayrıştırılamadı: %w", err)
 	}
 
 	// JobView nesnesini tamamla
 	job.Details = details
 	job.Categories = categories
 
-	return &job, nil
+	return job, nil
 }
 
 // scanJobs - Ortak rows scan işlemi için yardımcı fonksiyon
@@ -165,7 +165,7 @@ func (r *Repository) GetAllJobs(ctx context.Context) ([]types.JobView, error) {
 }
 
 // GetJobBySlug - URL yapısına (slug) göre iş ilanını view olarak getirir
-func (r *Repository) GetJobBySlug(ctx context.Context, slug string) (*types.JobView, error) {
+func (r *Repository) GetJobBySlug(ctx context.Context, slug string) (types.JobView, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Get Job By Slug")
 
 	query := jobBaseQuery + `
@@ -177,7 +177,7 @@ func (r *Repository) GetJobBySlug(ctx context.Context, slug string) (*types.JobV
 }
 
 // GetJobByID - ID'ye göre iş ilanını view olarak getirir
-func (r *Repository) GetJobByID(ctx context.Context, id uuid.UUID) (*types.JobView, error) {
+func (r *Repository) GetJobByID(ctx context.Context, id uuid.UUID) (types.JobView, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Get Job By ID")
 
 	query := jobBaseQuery + `

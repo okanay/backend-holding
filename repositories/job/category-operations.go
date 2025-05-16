@@ -12,8 +12,9 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-func (r *Repository) CreateCategory(ctx context.Context, input types.JobCategoryInput, userID uuid.UUID) (*types.JobCategory, error) {
+func (r *Repository) CreateCategory(ctx context.Context, input types.JobCategoryInput, userID uuid.UUID) (types.JobCategory, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Create Category")
+	var category types.JobCategory
 
 	query := `
 		INSERT INTO job_categories (name, display_name, user_id)
@@ -21,7 +22,6 @@ func (r *Repository) CreateCategory(ctx context.Context, input types.JobCategory
 		RETURNING name, display_name, user_id, created_at, updated_at
 	`
 
-	var category types.JobCategory
 	err := r.db.QueryRowContext(
 		ctx,
 		query,
@@ -39,13 +39,13 @@ func (r *Repository) CreateCategory(ctx context.Context, input types.JobCategory
 	if err != nil {
 		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23505" {
 			if pgErr.Constraint == "job_categories_pkey" || pgErr.Constraint == "job_categories_name_key" {
-				return nil, fmt.Errorf("bu kategori adı (%s) zaten kullanımda", input.Name)
+				return category, fmt.Errorf("bu kategori adı (%s) zaten kullanımda", input.Name)
 			}
 		}
-		return nil, fmt.Errorf("kategori oluşturulamadı: %w", err)
+		return category, fmt.Errorf("kategori oluşturulamadı: %w", err)
 	}
 
-	return &category, nil
+	return category, nil
 }
 
 func (r *Repository) GetAllCategories(ctx context.Context) ([]types.JobCategory, error) {
@@ -85,8 +85,9 @@ func (r *Repository) GetAllCategories(ctx context.Context) ([]types.JobCategory,
 	return categories, nil
 }
 
-func (r *Repository) UpdateCategory(ctx context.Context, name string, input types.JobCategoryInput) (*types.JobCategory, error) {
+func (r *Repository) UpdateCategory(ctx context.Context, name string, input types.JobCategoryInput) (types.JobCategory, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Update Category")
+	var category types.JobCategory
 
 	query := `
 		UPDATE job_categories
@@ -95,7 +96,6 @@ func (r *Repository) UpdateCategory(ctx context.Context, name string, input type
 		RETURNING name, display_name, user_id, created_at, updated_at
 	`
 
-	var category types.JobCategory
 	err := r.db.QueryRowContext(
 		ctx,
 		query,
@@ -111,10 +111,10 @@ func (r *Repository) UpdateCategory(ctx context.Context, name string, input type
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("güncellenecek kategori bulunamadı: %s", name)
+			return category, fmt.Errorf("güncellenecek kategori bulunamadı: %s", name)
 		}
-		return nil, fmt.Errorf("kategori güncellenemedi: %w", err)
+		return category, fmt.Errorf("kategori güncellenemedi: %w", err)
 	}
 
-	return &category, nil
+	return category, nil
 }

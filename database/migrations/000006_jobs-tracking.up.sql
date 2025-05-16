@@ -27,3 +27,5 @@ CREATE INDEX idx_jobs_tracking_codes_tracking_code ON jobs_tracking_codes (track
 CREATE INDEX idx_jobs_tracking_sessions_email ON jobs_tracking_sessions (email);
 
 CREATE INDEX idx_jobs_tracking_sessions_token ON jobs_tracking_sessions (session_token);
+
+CREATE INDEX idx_jobs_tracking_sessions_expires_at ON jobs_tracking_sessions (expires_at);
