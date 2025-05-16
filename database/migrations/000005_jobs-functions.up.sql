@@ -59,8 +59,3 @@ CREATE TRIGGER update_job_applications_updated_at
 BEFORE UPDATE ON job_applications
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_job_application_status_history_updated_at
-BEFORE UPDATE ON job_application_status_history
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();

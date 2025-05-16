@@ -57,16 +57,6 @@ CREATE TABLE IF NOT EXISTS job_applications (
     updated_at TIMESTAMPTZ DEFAULT NOW () NOT NULL
 );
 
--- Başvuru Durum Geçmişi Tablosu
-CREATE TABLE IF NOT EXISTS job_application_status_history (
-    id UUID DEFAULT uuid_generate_v4 () PRIMARY KEY,
-    job_application_id UUID NOT NULL REFERENCES job_applications (id) ON DELETE CASCADE,
-    old_status TEXT,
-    new_status TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW () NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW () NOT NULL
-);
-
 -- İndeksler
 CREATE INDEX idx_job_postings_user_id ON job_postings (user_id);
 
@@ -77,5 +67,3 @@ CREATE INDEX idx_job_posting_categories_category_name ON job_posting_categories 
 CREATE INDEX idx_job_applications_job_id ON job_applications (job_id);
 
 CREATE INDEX idx_job_applications_status ON job_applications (status);
-
-CREATE INDEX idx_job_application_status_history_job_application_id ON job_application_status_history (job_application_id);

@@ -26,16 +26,15 @@ const (
 
 // Job - İş ilanı ana yapısı (job_postings tablosu)
 type Job struct {
-	ID            uuid.UUID                     `db:"id" json:"id"`
-	UserID        uuid.UUID                     `db:"user_id" json:"userId"`
-	Slug          string                        `db:"slug" json:"slug"`
-	Status        JobStatus                     `db:"status" json:"status"`
-	Deadline      *time.Time                    `db:"deadline" json:"deadline,omitempty"`
-	CreatedAt     time.Time                     `db:"created_at" json:"createdAt"`
-	UpdatedAt     time.Time                     `db:"updated_at" json:"updatedAt"`
-	Details       *JobDetails                   `json:"details,omitempty"`
-	Categories    []string                      `json:"categories,omitempty"`
-	StatusHistory []JobApplicationStatusHistory `json:"statusHistory"`
+	ID         uuid.UUID   `db:"id" json:"id"`
+	UserID     uuid.UUID   `db:"user_id" json:"userId"`
+	Slug       string      `db:"slug" json:"slug"`
+	Status     JobStatus   `db:"status" json:"status"`
+	Deadline   *time.Time  `db:"deadline" json:"deadline,omitempty"`
+	CreatedAt  time.Time   `db:"created_at" json:"createdAt"`
+	UpdatedAt  time.Time   `db:"updated_at" json:"updatedAt"`
+	Details    *JobDetails `json:"details,omitempty"`
+	Categories []string    `json:"categories,omitempty"`
 }
 
 // JobDetails - İş ilanı detayları (job_posting_details tablosu)
@@ -74,16 +73,6 @@ type JobApplication struct {
 	Status    string    `db:"status" json:"status"`
 	CreatedAt time.Time `db:"created_at" json:"createdAt"`
 	UpdatedAt time.Time `db:"updated_at" json:"updatedAt"`
-}
-
-// JobApplicationStatusHistory - Başvuru durum geçmişi (job_application_status_history tablosu)
-type JobApplicationStatusHistory struct {
-	ID               uuid.UUID `db:"id" json:"id"`
-	JobApplicationID uuid.UUID `db:"job_application_id" json:"jobApplicationId"`
-	OldStatus        string    `db:"old_status" json:"oldStatus,omitempty"`
-	NewStatus        string    `db:"new_status" json:"newStatus"`
-	CreatedAt        time.Time `db:"created_at" json:"createdAt"`
-	UpdatedAt        time.Time `db:"updated_at" json:"updatedAt"`
 }
 
 // JobsTrackingCode - İş başvuru takip kodu (jobs_tracking_codes tablosu)
@@ -150,24 +139,15 @@ type JobCategoryView struct {
 
 // JobApplicationView - Başvuru görünümü
 type JobApplicationView struct {
-	ID            uuid.UUID                         `json:"id"`
-	JobID         uuid.UUID                         `json:"jobId"`
-	JobTitle      string                            `json:"jobTitle,omitempty"` // İlişkili işin başlığı
-	FullName      string                            `json:"fullName"`
-	Email         string                            `json:"email"`
-	Phone         string                            `json:"phone"`
-	FormType      string                            `json:"formType"`
-	FormJSON      string                            `json:"formJson"`
-	Status        string                            `json:"status"`
-	CreatedAt     time.Time                         `json:"createdAt"`
-	StatusHistory []JobApplicationStatusHistoryView `json:"statusHistory"`
-}
-
-// JobApplicationStatusHistoryView - Başvuru durum geçmişi görünümü
-type JobApplicationStatusHistoryView struct {
 	ID        uuid.UUID `json:"id"`
-	OldStatus string    `json:"oldStatus,omitempty"`
-	NewStatus string    `json:"newStatus"`
+	JobID     uuid.UUID `json:"jobId"`
+	JobTitle  string    `json:"jobTitle,omitempty"`
+	FullName  string    `json:"fullName"`
+	Email     string    `json:"email"`
+	Phone     string    `json:"phone"`
+	FormType  string    `json:"formType"`
+	FormJSON  string    `json:"formJson"`
+	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 

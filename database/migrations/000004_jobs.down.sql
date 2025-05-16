@@ -1,8 +1,4 @@
 -- Önce ilişki tabloları ve index'leri
-DROP INDEX IF EXISTS idx_job_application_status_history_job_application_id;
-
-DROP TABLE IF EXISTS job_application_status_history;
-
 DROP INDEX IF EXISTS idx_job_applications_status;
 
 DROP INDEX IF EXISTS idx_job_applications_job_id;
