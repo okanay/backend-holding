@@ -3,7 +3,6 @@ package JobRepository
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-func (r *Repository) GetJobApplications(ctx context.Context, params types.JobApplicationSearchParams) ([]types.JobApplication, int, error) {
+func (r *Repository) ListJobsApplications(ctx context.Context, params types.JobApplicationSearchParams) ([]types.JobApplication, int, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Get Job Applications")
 
 	baseQuery := `
@@ -120,12 +119,11 @@ func (r *Repository) GetJobApplications(ctx context.Context, params types.JobApp
 	return applications, total, nil
 }
 
-func (r *Repository) GetJobApplicationByID(ctx context.Context, applicationID uuid.UUID) (types.JobApplication, []types.JobApplicationStatusHistory, error) {
+func (r *Repository) GetJobApplicationByID(ctx context.Context, applicationID uuid.UUID) (types.JobApplication, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Get Job Application By ID")
 
 	var app types.JobApplication
 	var jobTitle sql.NullString
-	var statusHistoryJSON []byte
 
 	query := `
 		SELECT
@@ -139,24 +137,7 @@ func (r *Repository) GetJobApplicationByID(ctx context.Context, applicationID uu
 			a.status,
 			a.created_at,
 			a.updated_at,
-			d.title AS job_title,
-			(
-				SELECT COALESCE(
-					json_agg(
-						json_build_object(
-							'id', h.id,
-							'oldStatus', h.old_status,
-							'newStatus', h.new_status,
-							'createdAt', h.created_at,
-							'updatedAt', h.updated_at
-						)
-						ORDER BY h.created_at ASC
-					),
-					'[]'::json
-				)
-				FROM job_application_status_history h
-				WHERE h.job_application_id = a.id
-			) AS status_history
+			d.title AS job_title
 		FROM job_applications a
 		LEFT JOIN job_postings p ON a.job_id = p.id
 		LEFT JOIN job_posting_details d ON p.id = d.id
@@ -175,24 +156,16 @@ func (r *Repository) GetJobApplicationByID(ctx context.Context, applicationID uu
 		&app.CreatedAt,
 		&app.UpdatedAt,
 		&jobTitle,
-		&statusHistoryJSON,
 	)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return app, nil, nil
+			return app, nil
 		}
-		return app, nil, fmt.Errorf("başvuru getirilemedi: %w", err)
+		return app, fmt.Errorf("başvuru getirilemedi: %w", err)
 	}
 
-	var statusHistory []types.JobApplicationStatusHistory
-	if len(statusHistoryJSON) > 0 {
-		if err := json.Unmarshal(statusHistoryJSON, &statusHistory); err != nil {
-			return app, nil, fmt.Errorf("durum geçmişi ayrıştırılamadı: %w", err)
-		}
-	}
-
-	return app, statusHistory, nil
+	return app, nil
 }
 
 func (r *Repository) GetJobApplicationsByEmail(ctx context.Context, email string) ([]types.JobApplication, error) {
@@ -210,12 +183,7 @@ func (r *Repository) GetJobApplicationsByEmail(ctx context.Context, email string
 			a.status,
 			a.created_at,
 			a.updated_at,
-			d.title AS job_title,
-			(
-				SELECT MAX(h.created_at)
-				FROM job_application_status_history h
-				WHERE h.job_application_id = a.id
-			) AS last_status_change
+			d.title AS job_title
 		FROM job_applications a
 		LEFT JOIN job_postings p ON a.job_id = p.id
 		LEFT JOIN job_posting_details d ON p.id = d.id
@@ -233,7 +201,6 @@ func (r *Repository) GetJobApplicationsByEmail(ctx context.Context, email string
 	for rows.Next() {
 		var app types.JobApplication
 		var jobTitle sql.NullString
-		var lastStatusChange sql.NullTime
 
 		if err := rows.Scan(
 			&app.ID,
@@ -247,7 +214,6 @@ func (r *Repository) GetJobApplicationsByEmail(ctx context.Context, email string
 			&app.CreatedAt,
 			&app.UpdatedAt,
 			&jobTitle,
-			&lastStatusChange,
 		); err != nil {
 			return nil, fmt.Errorf("başvuru bilgisi okunamadı: %w", err)
 		}

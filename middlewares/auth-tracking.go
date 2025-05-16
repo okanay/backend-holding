@@ -34,6 +34,7 @@ func AuthTrackingMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// Email'i context'e ekle
 		c.Set("tracking_email", token.Email)
 		c.Next()
 	}

@@ -50,14 +50,24 @@ type Handlers struct {
 
 func main() {
 	// 1. Çevresel Değişkenleri Yükle
-	loadEnvironmentVariables()
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("[ENV] 🚫: .env dosyası yüklenemedi, ortam değişkenleri kullanılacak 🌎")
+	} else {
+		log.Println("[ENV] ✅: .env dosyası başarıyla yüklendi.")
+	}
 
 	// 2. Veritabanı Bağlantısı Kur
-	sqlDB := setupDatabase()
+	sqlDB, err := db.Init(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("[DATABASE] 🚫: Veritabanına bağlanırken hata: %v", err)
+	} else {
+		log.Println("[DATABASE] ✅: Veritabanı bağlantısı başarıyla kuruldu")
+		defer sqlDB.Close()
+	}
+
 	sqlDB.SetMaxOpenConns(25)
 	sqlDB.SetMaxIdleConns(25)
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
-	defer sqlDB.Close()
 
 	// 3. Servisleri ve Handler'ları Başlat
 	repos := initRepositories(sqlDB)
@@ -115,24 +125,6 @@ func main() {
 
 	// 5. Sunucuyu Başlat
 	startServer(router)
-}
-
-// Çevresel değişkenleri yükler
-func loadEnvironmentVariables() {
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("[ENV]: .env dosyası yüklenemedi, ortam değişkenleri kullanılacak")
-	}
-}
-
-// Veritabanı bağlantısını kurar ve yapılandırır
-func setupDatabase() *sql.DB {
-	sqlDB, err := db.Init(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatalf("[DATABASE]: Veritabanına bağlanırken hata: %v", err)
-	}
-
-	log.Println("[DATABASE]: Veritabanı bağlantısı başarıyla kuruldu")
-	return sqlDB
 }
 
 // Repository'lerin başlatılması

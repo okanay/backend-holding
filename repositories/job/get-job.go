@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -162,6 +163,92 @@ func (r *Repository) GetAllJobs(ctx context.Context) ([]types.JobView, error) {
 	defer rows.Close()
 
 	return scanJobs(rows)
+}
+
+// ListJobs iş ilanlarını arama parametrelerine göre listeler
+func (r *Repository) ListJobs(ctx context.Context, params types.JobSearchParams) ([]types.JobView, int, error) {
+	defer utils.TimeTrack(time.Now(), "Job -> List Jobs")
+
+	baseQuery := jobBaseQuery
+
+	countQuery := `
+		SELECT COUNT(*)
+		FROM job_postings p
+		LEFT JOIN job_posting_details d ON p.id = d.id
+	`
+
+	whereClause := " WHERE p.status != 'deleted'"
+	args := []any{}
+	paramIndex := 1
+
+	// Durum filtreleme
+	if params.Status != "" {
+		whereClause += fmt.Sprintf(" AND p.status = $%d", paramIndex)
+		args = append(args, params.Status)
+		paramIndex++
+	}
+
+	// Kategori filtreleme
+	if params.Category != "" {
+		whereClause += fmt.Sprintf(" AND EXISTS (SELECT 1 FROM job_posting_categories jpc WHERE jpc.job_id = p.id AND jpc.category_name = $%d)", paramIndex)
+		args = append(args, params.Category)
+		paramIndex++
+	}
+
+	// Lokasyon filtreleme
+	if params.Location != "" {
+		whereClause += fmt.Sprintf(" AND d.location ILIKE $%d", paramIndex)
+		args = append(args, "%"+params.Location+"%")
+		paramIndex++
+	}
+
+	// Arama sorgusu (başlık ve açıklamada)
+	if params.Query != "" {
+		whereClause += fmt.Sprintf(" AND (d.title ILIKE $%d OR d.description ILIKE $%d)", paramIndex, paramIndex+1)
+		searchTerm := "%" + params.Query + "%"
+		args = append(args, searchTerm, searchTerm)
+		paramIndex += 2
+	}
+
+	// Sıralama
+	var orderBy string
+	switch params.SortBy {
+	case "title":
+		orderBy = "d.title"
+	case "deadline":
+		orderBy = "p.deadline"
+	case "createdAt", "created_at":
+		orderBy = "p.created_at"
+	case "updatedAt", "updated_at":
+		orderBy = "p.updated_at"
+	default:
+		orderBy = "p.created_at"
+	}
+
+	orderClause := fmt.Sprintf(" ORDER BY %s %s", orderBy, strings.ToUpper(params.SortOrder))
+	limitOffset := fmt.Sprintf(" LIMIT %d OFFSET %d", params.Limit, (params.Page-1)*params.Limit)
+
+	// Toplam sayıyı al
+	var total int
+	err := r.db.QueryRowContext(ctx, countQuery+whereClause, args...).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("iş ilanları sayısı alınamadı: %w", err)
+	}
+
+	// İş ilanlarını al
+	rows, err := r.db.QueryContext(ctx, baseQuery+whereClause+orderClause+limitOffset, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("iş ilanları getirilemedi: %w", err)
+	}
+	defer rows.Close()
+
+	// Sonuçları tara
+	jobs, err := scanJobs(rows)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return jobs, total, nil
 }
 
 // GetJobBySlug - URL yapısına (slug) göre iş ilanını view olarak getirir
