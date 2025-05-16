@@ -49,7 +49,7 @@ func handleTokenRenewal(c *gin.Context, ur *UserRepository.Repository, tr *Token
 		return
 	}
 
-	dbToken, err := tr.SelectRefreshTokenByToken(refreshToken)
+	dbToken, err := tr.SelectRefreshTokenByToken(c, refreshToken)
 	if err != nil {
 		handleUnauthorized(c, "Invalid session.")
 		return
@@ -65,7 +65,7 @@ func handleTokenRenewal(c *gin.Context, ur *UserRepository.Repository, tr *Token
 		return
 	}
 
-	user, err := ur.SelectByUsername(dbToken.UserUsername)
+	user, err := ur.SelectByUsername(c, dbToken.UserUsername)
 	if err != nil {
 		handleUnauthorized(c, "User not found.")
 		return
@@ -94,7 +94,7 @@ func handleTokenRenewal(c *gin.Context, ur *UserRepository.Repository, tr *Token
 		return
 	}
 
-	err = tr.UpdateRefreshTokenLastUsed(refreshToken)
+	err = tr.UpdateRefreshTokenLastUsed(c, refreshToken)
 	if err != nil {
 	}
 

@@ -1,6 +1,7 @@
 package UserRepository
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -9,25 +10,31 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-func (r *Repository) SelectByID(id uuid.UUID) (types.User, error) {
+func (r *Repository) SelectByID(ctx context.Context, id uuid.UUID) (types.User, error) {
 	defer utils.TimeTrack(time.Now(), "User -> Select User By ID")
 
 	var user types.User
 
 	query := `SELECT * FROM users WHERE id = $1 LIMIT 1`
-	rows, err := r.db.Query(query, id)
-	defer rows.Close()
-	if err != nil {
-		return user, err
+
+	// Context kontrolü
+	if err := ctx.Err(); err != nil {
+		return user, fmt.Errorf("context iptal edildi: %w", err)
 	}
 
+	rows, err := r.db.QueryContext(ctx, query, id)
+	if err != nil {
+		return user, fmt.Errorf("kullanıcı sorgu hatası: %w", err)
+	}
+	defer rows.Close()
+
 	if !rows.Next() {
-		return user, fmt.Errorf("No rows returned after select")
+		return user, fmt.Errorf("kullanıcı bulunamadı")
 	}
 
 	err = utils.ScanStructByDBTags(rows, &user)
 	if err != nil {
-		return user, err
+		return user, fmt.Errorf("kullanıcı verileri okunamadı: %w", err)
 	}
 
 	return user, nil

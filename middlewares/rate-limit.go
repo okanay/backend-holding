@@ -5,31 +5,61 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/okanay/backend-holding/configs"
 	"golang.org/x/time/rate"
 )
 
+type rateLimiterInfo struct {
+	limiter  *rate.Limiter
+	lastUsed time.Time
+}
+
 func RateLimiterMiddleware(limit int, period time.Duration) gin.HandlerFunc {
-	// Her IP için ayrı bir limiter oluştur
-	limiters := make(map[string]*rate.Limiter)
-	var mu sync.Mutex
+	limiters := make(map[string]*rateLimiterInfo)
+	cleanupInterval := configs.RATE_LIMIT_CLEANUP_DURATION
+	var mu sync.RWMutex
+
+	go func() {
+		ticker := time.NewTicker(cleanupInterval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			mu.Lock()
+			now := time.Now()
+			for ip, info := range limiters {
+				if now.Sub(info.lastUsed) > 30*time.Minute {
+					delete(limiters, ip)
+				}
+			}
+			mu.Unlock()
+		}
+	}()
 
 	return func(c *gin.Context) {
-		// İstemci IP'sini al
 		ip := c.ClientIP()
 
-		// IP için limiter'ı bul veya oluştur
-		mu.Lock()
-		limiter, exists := limiters[ip]
-		if !exists {
-			// Yeni limiter oluştur (rate.Every ile periyot başına istek sayısını belirle)
-			limiter = rate.NewLimiter(rate.Every(period/time.Duration(limit)), limit)
-			limiters[ip] = limiter
-		}
-		mu.Unlock()
+		mu.RLock()
+		info, exists := limiters[ip]
+		mu.RUnlock()
 
-		// Bu istek için izin kontrol et
-		if !limiter.Allow() {
-			// Rate limit aşıldı
+		if !exists {
+			mu.Lock()
+			if info, exists = limiters[ip]; !exists {
+				limiter := rate.NewLimiter(rate.Every(period/time.Duration(limit)), limit)
+				info = &rateLimiterInfo{
+					limiter:  limiter,
+					lastUsed: time.Now(),
+				}
+				limiters[ip] = info
+			}
+			mu.Unlock()
+		} else {
+			mu.Lock()
+			info.lastUsed = time.Now()
+			mu.Unlock()
+		}
+
+		if !info.limiter.Allow() {
 			c.JSON(429, gin.H{
 				"success": false,
 				"error":   "rate_limit_exceeded",
@@ -39,7 +69,6 @@ func RateLimiterMiddleware(limit int, period time.Duration) gin.HandlerFunc {
 			return
 		}
 
-		// Sonraki middleware'e geç
 		c.Next()
 	}
 }

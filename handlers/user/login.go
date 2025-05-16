@@ -20,7 +20,7 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	// Retrieve user information from the database
-	user, err := h.UserRepository.SelectByUsername(request.Username)
+	user, err := h.UserRepository.SelectByUsername(c, request.Username)
 	if err != nil {
 		utils.Unauthorized(c, "Geçersiz kullanıcı adı veya şifre.")
 		return
@@ -80,7 +80,7 @@ func (h *Handler) Login(c *gin.Context) {
 		ExpiresAt:    expiresAt,
 	}
 
-	_, err = h.TokenRepository.CreateRefreshToken(tokenRequest)
+	_, err = h.TokenRepository.CreateRefreshToken(c, tokenRequest)
 	if err != nil {
 		if utils.HandleDatabaseError(c, err, "Token kaydetme") {
 			return
@@ -90,7 +90,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	// Update user's last login time
 	now := time.Now()
-	err = h.UserRepository.UpdateLastLogin(user.Email, now)
+	err = h.UserRepository.UpdateLastLogin(c, user.Email, now)
 	if err != nil {
 		// Bu hata kritik değil, session oluşmaya devam edebilir
 		// Log yapılabilir

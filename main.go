@@ -64,16 +64,20 @@ func main() {
 	router.Use(c.SecureConfig)
 	router.MaxMultipartMemory = 10 << 20
 
+	// 4.0 Global Middlewares
+	router.Use(middlewares.TimeoutMiddleware())
+
+	// 4.1 Middlewares Initialize
 	Recaptcha := middlewares.NewRecaptchaMiddleware(os.Getenv("RECAPTCHA_SECRET_KEY"), 0.7)
 	defer Recaptcha.Close()
 
-	// 4.1 Routes
+	// 4.2 Routes
 	publicAPI := router.Group("/public")
 	publicFileAPI := router.Group("/public/files")
 	internalAPI := router.Group("/internal")
 	authAPI := router.Group("/auth")
 
-	// 4.2 Middlewares
+	// 4.3 Middlewares
 	publicAPI.Use(mw.RateLimiterMiddleware(60, time.Minute))
 	internalAPI.Use(mw.RateLimiterMiddleware(1000, time.Minute))
 

@@ -8,10 +8,14 @@ const (
 	// Project Rules
 	PROJECT_NAME = "Heraklet Holding"
 
+	// TIMEOUT RULES
+	REQUEST_MAX_DURATION = 20 * time.Second
+
 	// STATS RULES
 	VIEW_CACHE_EXPIRATION = 1 * time.Minute
 
-	// AI RATE LIMIT RULES
+	// RATE LIMIT RULES
+	RATE_LIMIT_CLEANUP_DURATION  = 1 * time.Hour
 	AI_RATE_LIMIT_WINDOW         = 30 * time.Minute
 	AI_RATE_LIMIT_MAX_REQUESTS   = 50
 	AI_RATE_LIMIT_REQ_PER_MINUTE = 5

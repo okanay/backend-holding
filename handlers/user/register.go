@@ -19,7 +19,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	user, err := h.UserRepository.CreateUser(request)
+	user, err := h.UserRepository.CreateUser(c, request)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {

@@ -10,7 +10,7 @@ import (
 
 func (h *Handler) GetMe(c *gin.Context) {
 	userID := c.MustGet("user_id").(uuid.UUID)
-	user, err := h.UserRepository.SelectByID(userID)
+	user, err := h.UserRepository.SelectByID(c, userID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
