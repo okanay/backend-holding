@@ -20,8 +20,13 @@ const (
 	// Session Rules
 	REFRESH_TOKEN_LENGTH   = 32
 	REFRESH_TOKEN_DURATION = 30 * 24 * time.Hour
-	REFRESH_TOKEN_NAME     = "holding_refresh_token"
-	ACCESS_TOKEN_NAME      = "holding_access_token"
+	REFRESH_TOKEN_NAME     = "refresh_token"
+	ACCESS_TOKEN_NAME      = "access_token"
 	ACCESS_TOKEN_DURATION  = 1 * time.Minute
 	JWT_ISSUER             = "holding"
+
+	// JOBS Application Rules
+	JOBS_TRACKING_SUBJECT  = "tracking_jwt"
+	JOBS_TRACKING_COOKIE   = "tracking_cookie"
+	JOBS_TRACKING_DURATION = 30 * 24 * time.Hour
 )
