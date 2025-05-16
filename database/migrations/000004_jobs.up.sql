@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS job_posting_details (
     experience_level TEXT, -- Deneyim seviyesi (Junior, Mid-level, Senior)
     html TEXT NOT NULL, -- React Tiptap Editor HTML
     json TEXT NOT NULL, -- React Tiptap Editor JSON
+    form_type TEXT NOT NULL, -- Form tipi ('basic', 'developer', 'designer', vs.)
     applicants INTEGER DEFAULT 0
 );
 
@@ -49,8 +50,8 @@ CREATE TABLE IF NOT EXISTS job_applications (
     full_name TEXT NOT NULL, -- Başvuran kişinin tam adı
     email TEXT NOT NULL, -- İletişim e-postası
     phone TEXT NOT NULL, -- İletişim telefonu (opsiyonel)
-    data_type TEXT NOT NULL, -- Form tipi ('basic', 'developer', 'designer', vs.)
-    data_json JSONB NOT NULL, -- Form verileri JSON formatında
+    form_type TEXT NOT NULL, -- Form tipi ('basic', 'developer', 'designer', vs.)
+    form_json JSONB NOT NULL, -- Form verileri JSON formatında
     status TEXT NOT NULL DEFAULT 'received', -- Serbest metin
     created_at TIMESTAMPTZ DEFAULT NOW () NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW () NOT NULL
