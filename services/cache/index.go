@@ -118,32 +118,12 @@ func (c *Cache) GetAllWithPrefix(prefix string) map[string][]byte {
 	return result
 }
 
-// Delete bir anahtarı önbellekten siler
-func (c *Cache) Delete(key string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	delete(c.data, key)
-}
-
 // Clear tüm önbelleği temizler
 func (c *Cache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	c.data = make(map[string]cacheItem)
-}
-
-func (c *Cache) ClearAIRateLimits() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	prefix := "ai_rate_limit:"
-	for key := range c.data {
-		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-			delete(c.data, key)
-		}
-	}
 }
 
 // ClearExceptPrefixes belirli öneklerle başlayan anahtarlar dışındaki tüm anahtarları temizler
@@ -180,6 +160,14 @@ func (c *Cache) ClearPrefix(prefix string) {
 			delete(c.data, key)
 		}
 	}
+}
+
+// Delete bir anahtarı önbellekten siler
+func (c *Cache) Delete(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	delete(c.data, key)
 }
 
 // ---- Timer İşlemleri ----
