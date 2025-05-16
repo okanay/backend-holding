@@ -26,17 +26,16 @@ const (
 
 // Job - İş ilanı ana yapısı (job_postings tablosu)
 type Job struct {
-	ID        uuid.UUID  `db:"id" json:"id"`
-	UserID    uuid.UUID  `db:"user_id" json:"userId"`
-	Slug      string     `db:"slug" json:"slug"`
-	Status    JobStatus  `db:"status" json:"status"`
-	Deadline  *time.Time `db:"deadline" json:"deadline,omitempty"`
-	CreatedAt time.Time  `db:"created_at" json:"createdAt"`
-	UpdatedAt time.Time  `db:"updated_at" json:"updatedAt"`
-
-	// İlişkili alanlar
-	Details    *JobDetails `json:"details,omitempty"`
-	Categories []string    `json:"categories,omitempty"`
+	ID            uuid.UUID                     `db:"id" json:"id"`
+	UserID        uuid.UUID                     `db:"user_id" json:"userId"`
+	Slug          string                        `db:"slug" json:"slug"`
+	Status        JobStatus                     `db:"status" json:"status"`
+	Deadline      *time.Time                    `db:"deadline" json:"deadline,omitempty"`
+	CreatedAt     time.Time                     `db:"created_at" json:"createdAt"`
+	UpdatedAt     time.Time                     `db:"updated_at" json:"updatedAt"`
+	Details       *JobDetails                   `json:"details,omitempty"`
+	Categories    []string                      `json:"categories,omitempty"`
+	StatusHistory []JobApplicationStatusHistory `json:"statusHistory"`
 }
 
 // JobDetails - İş ilanı detayları (job_posting_details tablosu)
@@ -151,16 +150,17 @@ type JobCategoryView struct {
 
 // JobApplicationView - Başvuru görünümü
 type JobApplicationView struct {
-	ID        uuid.UUID `json:"id"`
-	JobID     uuid.UUID `json:"jobId"`
-	JobTitle  string    `json:"jobTitle,omitempty"` // İlişkili işin başlığı
-	FullName  string    `json:"fullName"`
-	Email     string    `json:"email"`
-	Phone     string    `json:"phone"`
-	FormType  string    `json:"formType"`
-	FormJSON  string    `json:"formJson"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID            uuid.UUID                         `json:"id"`
+	JobID         uuid.UUID                         `json:"jobId"`
+	JobTitle      string                            `json:"jobTitle,omitempty"` // İlişkili işin başlığı
+	FullName      string                            `json:"fullName"`
+	Email         string                            `json:"email"`
+	Phone         string                            `json:"phone"`
+	FormType      string                            `json:"formType"`
+	FormJSON      string                            `json:"formJson"`
+	Status        string                            `json:"status"`
+	CreatedAt     time.Time                         `json:"createdAt"`
+	StatusHistory []JobApplicationStatusHistoryView `json:"statusHistory"`
 }
 
 // JobApplicationStatusHistoryView - Başvuru durum geçmişi görünümü
@@ -177,19 +177,19 @@ type JobApplicationStatusHistoryView struct {
 
 // JobInput - İş ilanı ortak input yapısı (Create ve Update için)
 type JobInput struct {
-	Title           string     `json:"title,omitempty" binding:"required_if=Operation create"`
+	Title           string     `json:"title,omitempty"`
 	Description     string     `json:"description,omitempty"`
 	Image           string     `json:"image,omitempty"`
-	Slug            string     `json:"slug,omitempty" binding:"required_if=Operation create"`
+	Slug            string     `json:"slug,omitempty"`
+	Status          JobStatus  `json:"status,omitempty"`
 	Location        string     `json:"location,omitempty"`
 	EmploymentType  string     `json:"employmentType,omitempty"`
 	ExperienceLevel string     `json:"experienceLevel,omitempty"`
-	HTML            string     `json:"html,omitempty" binding:"required_if=Operation create"`
-	JSON            string     `json:"json,omitempty" binding:"required_if=Operation create"`
-	FormType        string     `json:"formType,omitempty" binding:"required_if=Operation create"`
-	Categories      []string   `json:"categories,omitempty" binding:"required_if=Operation create"`
+	HTML            string     `json:"html,omitempty"`
+	JSON            string     `json:"json,omitempty"`
+	FormType        string     `json:"formType,omitempty"`
+	Categories      []string   `json:"categories,omitempty"`
 	Deadline        *time.Time `json:"deadline,omitempty"`
-	Operation       string     `json:"-" binding:"-"` // Validasyon için dahili kullanılır
 }
 
 // JobStatusInput - İş ilanı durumu güncelleme
@@ -199,9 +199,8 @@ type JobStatusInput struct {
 
 // JobCategoryInput - Kategori ortak input yapısı
 type JobCategoryInput struct {
-	Name        string `json:"name,omitempty" binding:"required_if=Operation create"`
+	Name        string `json:"name,omitempty"`
 	DisplayName string `json:"displayName" binding:"required"`
-	Operation   string `json:"-" binding:"-"` // Validasyon için dahili kullanılır
 }
 
 // JobApplicationInput - Başvuru giriş verisi

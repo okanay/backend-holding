@@ -2,6 +2,7 @@ package JobRepository
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -11,8 +12,8 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID uuid.UUID) (types.Job, error) {
-	defer utils.TimeTrack(time.Now(), "Job -> Create Job")
+func (r *Repository) UpdateJob(ctx context.Context, jobID uuid.UUID, input types.JobInput, userID uuid.UUID) (types.Job, error) {
+	defer utils.TimeTrack(time.Now(), "Job -> Update Job")
 	var job types.Job
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -21,19 +22,22 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 	}
 	defer tx.Rollback()
 
+	// İş ilanı temel bilgilerini güncelle
 	query := `
-		INSERT INTO job_postings (user_id, slug, status, deadline)
-		VALUES ($1, $2, $3, $4)
+		UPDATE job_postings
+		SET slug = $1, status = $2, deadline = $3, updated_at = NOW()
+		WHERE id = $4 AND user_id = $5 AND status != 'deleted'
 		RETURNING id, user_id, slug, status, deadline, created_at, updated_at
 	`
 
 	err = tx.QueryRowContext(
 		ctx,
 		query,
-		userID,
 		input.Slug,
 		input.Status,
 		input.Deadline,
+		jobID,
+		userID,
 	).Scan(
 		&job.ID,
 		&job.UserID,
@@ -45,18 +49,21 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 	)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return job, fmt.Errorf("güncellenecek iş ilanı bulunamadı veya yetkiniz yok")
+		}
 		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23505" && pgErr.Constraint == "job_postings_slug_key" {
 			return job, fmt.Errorf("bu URL yapısı (%s) zaten kullanımda", input.Slug)
 		}
-		return job, fmt.Errorf("iş ilanı oluşturulamadı: %w", err)
+		return job, fmt.Errorf("iş ilanı güncellenemedi: %w", err)
 	}
 
+	// İş ilanı detaylarını güncelle
 	detailsQuery := `
-		INSERT INTO job_posting_details (
-			id, title, description, image, location, employment_type,
-			experience_level, html, json, form_type, applicants
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0)
+		UPDATE job_posting_details
+		SET title = $1, description = $2, image = $3, location = $4, employment_type = $5,
+			experience_level = $6, html = $7, json = $8, form_type = $9
+		WHERE id = $10
 		RETURNING id, title, description, image, location, employment_type,
 			experience_level, html, json, form_type, applicants
 	`
@@ -65,7 +72,6 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 	err = tx.QueryRowContext(
 		ctx,
 		detailsQuery,
-		job.ID,
 		input.Title,
 		input.Description,
 		input.Image,
@@ -75,6 +81,7 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 		input.HTML,
 		input.JSON,
 		input.FormType,
+		jobID,
 	).Scan(
 		&details.ID,
 		&details.Title,
@@ -90,13 +97,20 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 	)
 
 	if err != nil {
-		return job, fmt.Errorf("iş ilanı detayları oluşturulamadı: %w", err)
+		return job, fmt.Errorf("iş ilanı detayları güncellenemedi: %w", err)
 	}
 
+	// Kategorileri güncelle - önce mevcut ilişkileri temizle
+	_, err = tx.ExecContext(ctx, "DELETE FROM job_posting_categories WHERE job_id = $1", jobID)
+	if err != nil {
+		return job, fmt.Errorf("kategoriler temizlenemedi: %w", err)
+	}
+
+	// Yeni kategorileri ekle
 	if len(input.Categories) > 0 {
 		categoryQuery := `INSERT INTO job_posting_categories (job_id, category_name) VALUES `
 
-		values := []any{job.ID}
+		values := []any{jobID}
 		placeholders := []string{}
 
 		for i, category := range input.Categories {
@@ -123,4 +137,31 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 	job.Categories = input.Categories
 
 	return job, nil
+}
+
+// UpdateJobStatus sadece iş ilanı durumunu günceller
+func (r *Repository) UpdateJobStatus(ctx context.Context, jobID uuid.UUID, status types.JobStatus) error {
+	defer utils.TimeTrack(time.Now(), "Job -> Update Job Status")
+
+	query := `
+		UPDATE job_postings
+		SET status = $1, updated_at = NOW()
+		WHERE id = $2
+	`
+
+	result, err := r.db.ExecContext(ctx, query, status, jobID)
+	if err != nil {
+		return fmt.Errorf("iş ilanı durumu güncellenemedi: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("etkilenen satır sayısı alınamadı: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("güncellenecek iş ilanı bulunamadı")
+	}
+
+	return nil
 }

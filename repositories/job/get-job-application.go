@@ -120,8 +120,12 @@ func (r *Repository) GetJobApplications(ctx context.Context, params types.JobApp
 	return applications, total, nil
 }
 
-func (r *Repository) GetJobApplicationByID(ctx context.Context, applicationID uuid.UUID) (*types.JobApplication, []types.JobApplicationStatusHistory, error) {
+func (r *Repository) GetJobApplicationByID(ctx context.Context, applicationID uuid.UUID) (types.JobApplication, []types.JobApplicationStatusHistory, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Get Job Application By ID")
+
+	var app types.JobApplication
+	var jobTitle sql.NullString
+	var statusHistoryJSON []byte
 
 	query := `
 		SELECT
@@ -159,10 +163,6 @@ func (r *Repository) GetJobApplicationByID(ctx context.Context, applicationID uu
 		WHERE a.id = $1
 	`
 
-	var app types.JobApplication
-	var jobTitle sql.NullString
-	var statusHistoryJSON []byte
-
 	err := r.db.QueryRowContext(ctx, query, applicationID).Scan(
 		&app.ID,
 		&app.JobID,
@@ -180,19 +180,19 @@ func (r *Repository) GetJobApplicationByID(ctx context.Context, applicationID uu
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil, nil
+			return app, nil, nil
 		}
-		return nil, nil, fmt.Errorf("başvuru getirilemedi: %w", err)
+		return app, nil, fmt.Errorf("başvuru getirilemedi: %w", err)
 	}
 
 	var statusHistory []types.JobApplicationStatusHistory
 	if len(statusHistoryJSON) > 0 {
 		if err := json.Unmarshal(statusHistoryJSON, &statusHistory); err != nil {
-			return nil, nil, fmt.Errorf("durum geçmişi ayrıştırılamadı: %w", err)
+			return app, nil, fmt.Errorf("durum geçmişi ayrıştırılamadı: %w", err)
 		}
 	}
 
-	return &app, statusHistory, nil
+	return app, statusHistory, nil
 }
 
 func (r *Repository) GetJobApplicationsByEmail(ctx context.Context, email string) ([]types.JobApplication, error) {
