@@ -14,6 +14,7 @@ import (
 	fh "github.com/okanay/backend-holding/handlers/file"
 	mh "github.com/okanay/backend-holding/handlers/main"
 	uh "github.com/okanay/backend-holding/handlers/user"
+	"github.com/okanay/backend-holding/middlewares"
 	mw "github.com/okanay/backend-holding/middlewares"
 	air "github.com/okanay/backend-holding/repositories/ai"
 	fr "github.com/okanay/backend-holding/repositories/file"
@@ -23,7 +24,6 @@ import (
 	"github.com/okanay/backend-holding/services/cache"
 )
 
-// Uygulama bileşenlerini gruplamak için yapılar
 type Repositories struct {
 	User  *ur.Repository
 	Token *tr.Repository
@@ -44,55 +44,85 @@ type Handlers struct {
 
 func main() {
 	// 1. Çevresel Değişkenleri Yükle
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatalf("[ENV]: .env dosyası yüklenemedi")
-		return
-	}
+	loadEnvironmentVariables()
 
 	// 2. Veritabanı Bağlantısı Kur
-	sqlDB, err := db.Init(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatalf("[DATABASE]: Veritabanına bağlanırken hata: %v", err)
-		return
-	}
+	sqlDB := setupDatabase()
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(25)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	defer sqlDB.Close()
 
-	// 3. Repository Katmanını Başlat
-	r := initRepositories(sqlDB)
-
-	// 4. Servis Katmanını Başlat
+	// 3. Servisleri ve Handler'ları Başlat
+	repos := initRepositories(sqlDB)
+	handlers := initHandlers(repos)
 	_ = initServices()
 
-	// 5. Handler Katmanını Başlat
-	h := initHandlers(r)
-
-	// 6. Router ve Middleware Yapılandırması
+	// 4. Router ve Middleware Yapılandırması
 	router := gin.Default()
 	router.Use(c.CorsConfig())
 	router.Use(c.SecureConfig)
-	router.MaxMultipartMemory = 10 << 20 // 10 MB
+	router.MaxMultipartMemory = 10 << 20
 
-	// Kimlik doğrulama gerektiren rotalar için grup
-	auth := router.Group("/auth")
-	auth.Use(mw.AuthMiddleware(r.User, r.Token))
+	Recaptcha := middlewares.NewRecaptchaMiddleware(os.Getenv("RECAPTCHA_SECRET_KEY"), 0.7)
+	defer Recaptcha.Close()
 
-	// Global Routes
-	router.GET("/", h.Main.Index)
-	router.NoRoute(h.Main.NotFound)
+	// 4.1 Routes
+	publicAPI := router.Group("/public")
+	publicFileAPI := router.Group("/public/files")
+	internalAPI := router.Group("/internal")
+	authAPI := router.Group("/auth")
 
-	// Authentication Routes (public)
-	router.POST("/login", h.User.Login)
-	router.POST("/register", h.User.Register)
-	auth.GET("/logout", h.User.Logout)
-	auth.GET("/get-me", h.User.GetMe)
+	// 4.2 Middlewares
+	publicAPI.Use(mw.RateLimiterMiddleware(60, time.Minute))
+	internalAPI.Use(mw.RateLimiterMiddleware(1000, time.Minute))
 
-	// 7. Sunucuyu Başlat
-	port := os.Getenv("PORT")
-	log.Printf("[SERVER]: %s portu üzerinde dinleniyor...", port)
+	authAPI.Use(mw.RateLimiterMiddleware(120, time.Minute))
+	authAPI.Use(mw.AuthMiddleware(repos.User, repos.Token))
 
-	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("[SERVER]: Sunucu başlatılırken hata: %v", err)
+	publicFileAPI.Use(mw.RateLimiterMiddleware(10, 15*time.Minute))
+	publicFileAPI.Use(Recaptcha.Middleware())
+
+	// `start with /`
+	router.GET("/", handlers.Main.Index)
+	router.NoRoute(handlers.Main.NotFound)
+
+	// `start with /public`
+	publicAPI.POST("/login", handlers.User.Login)
+	publicAPI.POST("/register", handlers.User.Register)
+
+	// `start with /auth`
+	authAPI.GET("/logout", handlers.User.Logout)
+	authAPI.GET("/get-me", handlers.User.GetMe)
+
+	// `start with /public/files`
+	publicFileAPI.POST("/presigned-url", handlers.File.CreatePresignedURL)
+	publicFileAPI.POST("/confirm-upload", handlers.File.ConfirmUpload)
+
+	// `start with /auth`
+	authAPI.GET("/files/category", handlers.File.GetFilesByCategory)
+	authAPI.DELETE("/files/:id", handlers.File.DeleteFile)
+
+	// 5. Sunucuyu Başlat
+	startServer(router)
+}
+
+// Çevresel değişkenleri yükler
+func loadEnvironmentVariables() {
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("[ENV]: .env dosyası yüklenemedi, ortam değişkenleri kullanılacak")
 	}
+}
+
+// Veritabanı bağlantısını kurar ve yapılandırır
+func setupDatabase() *sql.DB {
+	sqlDB, err := db.Init(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatalf("[DATABASE]: Veritabanına bağlanırken hata: %v", err)
+	}
+
+	log.Println("[DATABASE]: Veritabanı bağlantısı başarıyla kuruldu")
+	return sqlDB
 }
 
 // Repository'lerin başlatılması
@@ -118,7 +148,6 @@ func initRepositories(sqlDB *sql.DB) Repositories {
 func initServices() Services {
 	// Cache ve servis oluştur
 	blogCache := cache.NewCache(30 * time.Minute)
-
 	return Services{
 		BlogCache: blogCache,
 	}
@@ -130,5 +159,18 @@ func initHandlers(repos Repositories) Handlers {
 		Main: mh.NewHandler(),
 		User: uh.NewHandler(repos.User, repos.Token),
 		File: fh.NewHandler(repos.File, repos.R2),
+	}
+}
+
+// Sunucuyu başlatır
+func startServer(router *gin.Engine) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Varsayılan port
+	}
+
+	log.Printf("[SERVER]: %s portu üzerinde dinleniyor...", port)
+	if err := router.Run(":" + port); err != nil {
+		log.Fatalf("[SERVER]: Sunucu başlatılırken hata: %v", err)
 	}
 }

@@ -8,8 +8,8 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-// ApplicationTrackingMiddleware iş başvuru takip oturumunu doğrular
-func ApplicationTrackingMiddleware() gin.HandlerFunc {
+// AuthTrackingMiddleware iş başvuru takip oturumunu doğrular
+func AuthTrackingMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenCookie, err := c.Cookie(configs.JOBS_TRACKING_COOKIE)
 		if err != nil {

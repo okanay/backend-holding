@@ -18,6 +18,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/sashabaranov/go-openai v1.39.1
 	golang.org/x/crypto v0.31.0
+	golang.org/x/time v0.11.0
 )
 
 require (

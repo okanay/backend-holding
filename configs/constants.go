@@ -6,7 +6,7 @@ import (
 
 const (
 	// Project Rules
-	PROJECT_NAME = "Holding"
+	PROJECT_NAME = "Heraklet Holding"
 
 	// STATS RULES
 	VIEW_CACHE_EXPIRATION = 1 * time.Minute
@@ -22,7 +22,7 @@ const (
 	REFRESH_TOKEN_DURATION = 30 * 24 * time.Hour
 	REFRESH_TOKEN_NAME     = "refresh_token"
 	ACCESS_TOKEN_NAME      = "access_token"
-	ACCESS_TOKEN_DURATION  = 1 * time.Minute
+	ACCESS_TOKEN_DURATION  = 5 * time.Minute
 	JWT_ISSUER             = "holding"
 
 	// JOBS Application Rules
