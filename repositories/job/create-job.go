@@ -53,11 +53,11 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 
 	detailsQuery := `
 		INSERT INTO job_posting_details (
-			id, title, description, image, location, employment_type,
+			id, title, description, image, location, work_mode, employment_type,
 			experience_level, html, json, form_type, applicants
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0)
-		RETURNING id, title, description, image, location, employment_type,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0)
+		RETURNING id, title, description, image, location, work_mode, employment_type,
 			experience_level, html, json, form_type, applicants
 	`
 
@@ -70,6 +70,7 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 		input.Description,
 		input.Image,
 		input.Location,
+		input.WorkMode,
 		input.EmploymentType,
 		input.ExperienceLevel,
 		input.HTML,
@@ -81,6 +82,7 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 		&details.Description,
 		&details.Image,
 		&details.Location,
+		&details.WorkMode,
 		&details.EmploymentType,
 		&details.ExperienceLevel,
 		&details.HTML,

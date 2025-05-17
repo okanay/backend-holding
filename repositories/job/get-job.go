@@ -15,38 +15,39 @@ import (
 
 // getJobQuery - Tüm iş ilanı sorgularında kullanılacak ortak SQL sorgusu
 const jobBaseQuery = `
-    SELECT
-        p.id,
-        p.slug,
-        p.status,
-        p.deadline,
-        p.created_at,
-        p.updated_at,
-        d.title,
-        d.description,
-        d.image,
-        d.location,
-        d.employment_type,
-        d.experience_level,
-        d.html,
-        d.json,
-        d.form_type,
-        d.applicants,
-        -- Kategorileri dizi olarak al
-        (
-            SELECT COALESCE(json_agg(
-                json_build_object(
-                    'name', c.category_name,
-                    'displayName', cat.display_name,
-                    'createdAt', cat.created_at
-                ) ORDER BY cat.display_name
-            ), '[]'::json)
-            FROM job_posting_categories c
-            LEFT JOIN job_categories cat ON c.category_name = cat.name
-            WHERE c.job_id = p.id
-        ) AS categories
-    FROM job_postings p
-    LEFT JOIN job_posting_details d ON p.id = d.id
+				SELECT
+								p.id,
+								p.slug,
+								p.status,
+								p.deadline,
+								p.created_at,
+								p.updated_at,
+								d.title,
+								d.description,
+								d.image,
+								d.location,
+								d.work_mode,
+								d.employment_type,
+								d.experience_level,
+								d.html,
+								d.json,
+								d.form_type,
+								d.applicants,
+								-- Kategorileri dizi olarak al
+								(
+												SELECT COALESCE(json_agg(
+																json_build_object(
+																				'name', c.category_name,
+																				'displayName', cat.display_name,
+																				'createdAt', cat.created_at
+																) ORDER BY cat.display_name
+												), '[]'::json)
+												FROM job_posting_categories c
+												LEFT JOIN job_categories cat ON c.category_name = cat.name
+												WHERE c.job_id = p.id
+								) AS categories
+				FROM job_postings p
+				LEFT JOIN job_posting_details d ON p.id = d.id
 `
 
 // scanJob - Ortak scan işlemi için yardımcı fonksiyon
@@ -66,6 +67,7 @@ func scanJob(row *sql.Row) (types.JobView, error) {
 		&details.Description,
 		&details.Image,
 		&details.Location,
+		&details.WorkMode,
 		&details.EmploymentType,
 		&details.ExperienceLevel,
 		&details.HTML,
@@ -115,6 +117,7 @@ func scanJobs(rows *sql.Rows) ([]types.JobView, error) {
 			&details.Description,
 			&details.Image,
 			&details.Location,
+			&details.WorkMode,
 			&details.EmploymentType,
 			&details.ExperienceLevel,
 			&details.HTML,
@@ -152,9 +155,9 @@ func (r *Repository) GetAllJobs(ctx context.Context) ([]types.JobView, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Get All Jobs")
 
 	query := jobBaseQuery + `
-        WHERE p.status != 'deleted'
-        ORDER BY p.created_at DESC
-    `
+								WHERE p.status != 'deleted'
+								ORDER BY p.created_at DESC
+				`
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
@@ -199,6 +202,13 @@ func (r *Repository) ListJobs(ctx context.Context, params types.JobSearchParams)
 	if params.Location != "" {
 		whereClause += fmt.Sprintf(" AND d.location ILIKE $%d", paramIndex)
 		args = append(args, "%"+params.Location+"%")
+		paramIndex++
+	}
+
+	// Work mode filtreleme
+	if params.WorkMode != "" {
+		whereClause += fmt.Sprintf(" AND d.work_mode = $%d", paramIndex)
+		args = append(args, params.WorkMode)
 		paramIndex++
 	}
 
@@ -256,8 +266,8 @@ func (r *Repository) GetJobBySlug(ctx context.Context, slug string) (types.JobVi
 	defer utils.TimeTrack(time.Now(), "Job -> Get Job By Slug")
 
 	query := jobBaseQuery + `
-        WHERE p.slug = $1 AND p.status != 'deleted'
-    `
+								WHERE p.slug = $1 AND p.status != 'deleted'
+				`
 
 	row := r.db.QueryRowContext(ctx, query, slug)
 	return scanJob(row)
@@ -268,8 +278,8 @@ func (r *Repository) GetJobByID(ctx context.Context, id uuid.UUID) (types.JobVie
 	defer utils.TimeTrack(time.Now(), "Job -> Get Job By ID")
 
 	query := jobBaseQuery + `
-        WHERE p.id = $1 AND p.status != 'deleted'
-    `
+								WHERE p.id = $1 AND p.status != 'deleted'
+				`
 
 	row := r.db.QueryRowContext(ctx, query, id)
 	return scanJob(row)

@@ -10,7 +10,6 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-// ListJobApplications bir iş ilanına yapılan başvuruları listeler
 func (h *Handler) ListJobApplications(c *gin.Context) {
 	// Sayfalama parametrelerini al
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -70,7 +69,6 @@ func (h *Handler) ListJobApplications(c *gin.Context) {
 	})
 }
 
-// GetJobApplication bir iş başvurusunu detaylarıyla getirir
 func (h *Handler) GetJobApplication(c *gin.Context) {
 	// Başvuru ID'sini al
 	applicationID, err := uuid.Parse(c.Param("id"))

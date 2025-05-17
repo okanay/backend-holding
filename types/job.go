@@ -44,6 +44,7 @@ type JobDetails struct {
 	Description     string    `db:"description" json:"description,omitempty"`
 	Image           string    `db:"image" json:"image,omitempty"`
 	Location        string    `db:"location" json:"location,omitempty"`
+	WorkMode        string    `db:"work_mode" json:"workMode,omitempty"`
 	EmploymentType  string    `db:"employment_type" json:"employmentType,omitempty"`
 	ExperienceLevel string    `db:"experience_level" json:"experienceLevel,omitempty"`
 	HTML            string    `db:"html" json:"html"`
@@ -122,6 +123,7 @@ type JobDetailsView struct {
 	Description     string `json:"description,omitempty"`
 	Image           string `json:"image,omitempty"`
 	Location        string `json:"location,omitempty"`
+	WorkMode        string `json:"workMode,omitempty"`
 	EmploymentType  string `json:"employmentType,omitempty"`
 	ExperienceLevel string `json:"experienceLevel,omitempty"`
 	HTML            string `json:"html"`
@@ -163,6 +165,7 @@ type JobInput struct {
 	Slug            string     `json:"slug,omitempty"`
 	Status          JobStatus  `json:"status,omitempty"`
 	Location        string     `json:"location,omitempty"`
+	WorkMode        string     `json:"workMode,omitempty"`
 	EmploymentType  string     `json:"employmentType,omitempty"`
 	ExperienceLevel string     `json:"experienceLevel,omitempty"`
 	HTML            string     `json:"html,omitempty"`
@@ -218,6 +221,7 @@ type JobSearchParams struct {
 	Category  string    `form:"category"`
 	Query     string    `form:"q"` // Başlık/açıklama içinde arama
 	Location  string    `form:"location"`
+	WorkMode  string    `form:"workMode"`
 	Page      int       `form:"page,default=1"`
 	Limit     int       `form:"limit,default=10"`
 	SortBy    string    `form:"sortBy,default=createdAt"`

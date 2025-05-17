@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS job_posting_details (
     description TEXT,
     image TEXT,
     location TEXT, -- İş lokasyonu (İstanbul, Remote, vb.)
+    work_mode TEXT, -- Çalışma şekli (Remote, On-site, Hybrid, vb.)
     employment_type TEXT, -- Çalışma tipi (Tam zamanlı, Yarı zamanlı, Staj, vb.)
     experience_level TEXT, -- Deneyim seviyesi (Junior, Mid-level, Senior)
     html TEXT NOT NULL, -- React Tiptap Editor HTML

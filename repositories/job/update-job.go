@@ -61,10 +61,10 @@ func (r *Repository) UpdateJob(ctx context.Context, jobID uuid.UUID, input types
 	// İş ilanı detaylarını güncelle
 	detailsQuery := `
 		UPDATE job_posting_details
-		SET title = $1, description = $2, image = $3, location = $4, employment_type = $5,
-			experience_level = $6, html = $7, json = $8, form_type = $9
-		WHERE id = $10
-		RETURNING id, title, description, image, location, employment_type,
+		SET title = $1, description = $2, image = $3, location = $4, work_mode = $5, employment_type = $6,
+			experience_level = $7, html = $8, json = $9, form_type = $10
+		WHERE id = $11
+		RETURNING id, title, description, image, location, work_mode, employment_type,
 			experience_level, html, json, form_type, applicants
 	`
 
@@ -76,6 +76,7 @@ func (r *Repository) UpdateJob(ctx context.Context, jobID uuid.UUID, input types
 		input.Description,
 		input.Image,
 		input.Location,
+		input.WorkMode,
 		input.EmploymentType,
 		input.ExperienceLevel,
 		input.HTML,
@@ -88,6 +89,7 @@ func (r *Repository) UpdateJob(ctx context.Context, jobID uuid.UUID, input types
 		&details.Description,
 		&details.Image,
 		&details.Location,
+		&details.WorkMode,
 		&details.EmploymentType,
 		&details.ExperienceLevel,
 		&details.HTML,
