@@ -47,12 +47,19 @@ func (h *Handler) ConfirmUpload(c *gin.Context) {
 		return
 	}
 
+	// Dosya kategorisini al
+	fileCategory := signature.FileCategory
+	if input.FileCategory != "" {
+		// Eğer input'da belirtilmişse, onu kullan
+		fileCategory = input.FileCategory
+	}
+
 	// Dosyayı veritabanına kaydet
 	fileInput := types.SaveFileInput{
 		URL:          input.URL,
 		Filename:     signature.Filename,
 		FileType:     signature.FileType,
-		FileCategory: signature.FileCategory,
+		FileCategory: fileCategory,
 		SizeInBytes:  input.SizeInBytes,
 	}
 

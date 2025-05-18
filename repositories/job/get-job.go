@@ -155,7 +155,7 @@ func (r *Repository) GetAllJobs(ctx context.Context) ([]types.JobView, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Get All Jobs")
 
 	query := jobBaseQuery + `
-								WHERE p.status != 'deleted'
+								WHERE p.status = 'published'
 								ORDER BY p.created_at DESC
 				`
 
@@ -264,10 +264,11 @@ func (r *Repository) ListJobs(ctx context.Context, params types.JobSearchParams)
 // GetJobBySlug - URL yapısına (slug) göre iş ilanını view olarak getirir
 func (r *Repository) GetJobBySlug(ctx context.Context, slug string) (types.JobView, error) {
 	defer utils.TimeTrack(time.Now(), "Job -> Get Job By Slug")
-
 	query := jobBaseQuery + `
-								WHERE p.slug = $1 AND p.status != 'deleted'
-				`
+		WHERE p.slug = $1
+			AND p.status = 'published'
+			AND p.status != 'deleted'
+	`
 
 	row := r.db.QueryRowContext(ctx, query, slug)
 	return scanJob(row)

@@ -93,4 +93,7 @@ type ConfirmUploadInput struct {
 	URL          string `json:"url" binding:"required"`
 	FileCategory string `json:"fileCategory"`
 	SizeInBytes  int64  `json:"sizeInBytes" binding:"required,max=10485760"`
+	Width        int    `json:"width,omitempty"`
+	Height       int    `json:"height,omitempty"`
+	AltText      string `json:"altText,omitempty"`
 }

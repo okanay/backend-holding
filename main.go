@@ -109,13 +109,14 @@ func main() {
 	// `start with /public`
 	publicAPI.POST("/login", handlers.User.Login)
 	publicAPI.POST("/register", handlers.User.Register)
-	publicAPI.GET("/jobs", handlers.Job.ListJobs)
+	publicAPI.GET("/jobs", handlers.Job.ListPublishedJobs)
 	publicAPI.GET("/jobs/:id", handlers.Job.GetJobBySlug)
 
 	// `start with /auth`
 	authAPI.GET("/logout", handlers.User.Logout)
 	authAPI.GET("/get-me", handlers.User.GetMe)
 	authAPI.POST("/create-new-job", handlers.Job.CreateJob)
+	authAPI.GET("/jobs", handlers.Job.ListJobs)
 
 	// `start with /public/files`
 	publicFileAPI.POST("/presigned-url", handlers.File.CreatePresignedURL)

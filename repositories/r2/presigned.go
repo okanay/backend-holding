@@ -28,7 +28,7 @@ func (r *Repository) GeneratePresignedURL(ctx context.Context, input types.Presi
 
 	safeFilename := sanitizeFilename(input.Filename)
 
-	// Rastgele hash oluştur (6 karakter)
+	// Rastgele hash oluştur (8 karakter)
 	hashSuffix := utils.GenerateRandomString(8)
 
 	// Final dosya adını oluştur: orijinal-dosya-adi-ABCDEF.jpg
@@ -36,11 +36,13 @@ func (r *Repository) GeneratePresignedURL(ctx context.Context, input types.Presi
 
 	// File category'ye göre klasör yolu oluştur
 	var objectPath string
-	if input.FileCategory != "" {
-		objectPath = path.Join(r.folderName, input.FileCategory, finalFilename)
-	} else {
-		objectPath = path.Join(r.folderName, "general", finalFilename)
+	fileCategory := "general" // Varsayılan kategori
+
+	if input.FileCategory != "" && len(strings.TrimSpace(input.FileCategory)) > 0 {
+		fileCategory = strings.TrimSpace(input.FileCategory)
 	}
+
+	objectPath = path.Join(r.folderName, fileCategory, finalFilename)
 
 	// Presigned URL için client oluştur
 	presignClient := s3.NewPresignClient(r.client)

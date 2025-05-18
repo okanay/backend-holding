@@ -111,3 +111,48 @@ func (h *Handler) ListJobs(c *gin.Context) {
 		},
 	})
 }
+
+func (h *Handler) ListPublishedJobs(c *gin.Context) {
+	// Sayfalama parametrelerini al
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
+
+	// Sıralama ve filtreleme parametrelerini al
+	sortBy := c.DefaultQuery("sortBy", "createdAt")
+	sortOrder := c.DefaultQuery("sortOrder", "desc")
+	category := c.DefaultQuery("category", "")
+	location := c.DefaultQuery("location", "")
+	query := c.DefaultQuery("q", "")
+
+	// Parametreleri SearchParams yapısına dönüştür
+	params := types.JobSearchParams{
+		Status:    types.JobStatusPublished,
+		Category:  category,
+		Location:  location,
+		Query:     query,
+		Page:      page,
+		Limit:     limit,
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+	}
+
+	// İş ilanlarını getir
+	jobs, total, err := h.JobRepository.ListJobs(c.Request.Context(), params)
+	if err != nil {
+		utils.HandleDatabaseError(c, err, "İş ilanları listeleme")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"jobs": jobs,
+			"pagination": gin.H{
+				"currentPage": page,
+				"pageSize":    limit,
+				"totalItems":  total,
+				"totalPages":  (total + limit - 1) / limit,
+			},
+		},
+	})
+}
