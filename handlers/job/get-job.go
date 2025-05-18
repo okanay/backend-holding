@@ -40,7 +40,7 @@ func (h *Handler) GetJob(c *gin.Context) {
 // GetJobBySlug bir iş ilanını slug'a göre getirir
 func (h *Handler) GetJobBySlug(c *gin.Context) {
 	// Slug'ı al
-	slug := c.Param("slug")
+	slug := c.Param("id")
 	if slug == "" {
 		utils.BadRequest(c, "Geçersiz URL yapısı")
 		return
@@ -69,7 +69,7 @@ func (h *Handler) GetJobBySlug(c *gin.Context) {
 func (h *Handler) ListJobs(c *gin.Context) {
 	// Sayfalama parametrelerini al
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "100"))
 
 	// Sıralama ve filtreleme parametrelerini al
 	sortBy := c.DefaultQuery("sortBy", "createdAt")

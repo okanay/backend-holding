@@ -3,6 +3,7 @@ package JobRepository
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -105,8 +106,7 @@ func (r *Repository) CreateJob(ctx context.Context, input types.JobInput, userID
 			placeholders = append(placeholders, fmt.Sprintf("($1, $%d)", i+2))
 			values = append(values, category)
 		}
-
-		categoryQuery += " " + fmt.Sprint(placeholders)
+		categoryQuery += " " + strings.Join(placeholders, ", ")
 
 		_, err = tx.ExecContext(ctx, categoryQuery, values...)
 		if err != nil {

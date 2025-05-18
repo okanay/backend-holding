@@ -68,3 +68,24 @@ CREATE INDEX idx_job_posting_categories_category_name ON job_posting_categories 
 CREATE INDEX idx_job_applications_job_id ON job_applications (job_id);
 
 CREATE INDEX idx_job_applications_status ON job_applications (status);
+
+-- INSERT INTO job_categories (name, display_name, user_id) VALUES
+--     ('software', 'Software Development', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('it', 'IT & Support', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('design', 'Design & UX', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('product', 'Product Management', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('data', 'Data & Analytics', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('marketing', 'Marketing', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('sales', 'Sales', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('customer-service', 'Customer Service', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('finance', 'Finance & Accounting', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('hr', 'Human Resources', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('operations', 'Operations', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('legal', 'Legal', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('admin', 'Administration', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('engineering', 'Engineering', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('education', 'Education', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('healthcare', 'Healthcare', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('logistics', 'Logistics', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('construction', 'Construction', '3a455e50-2d70-46d9-8fa8-def2f5770449'),
+--     ('other', 'Other', '3a455e50-2d70-46d9-8fa8-def2f5770449');
