@@ -2,6 +2,7 @@
 package FileHandler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,11 +12,17 @@ import (
 
 // CreatePresignedURL dosya yüklemek için presigned URL oluşturur
 func (h *Handler) CreatePresignedURL(c *gin.Context) {
+	// DEBUG: Print incoming request context and headers
+	fmt.Printf("CreatePresignedURL called. Headers: %+v\n", c.Request.Header)
+
 	var input types.CreatePresignedURLInput
 	err := utils.ValidateRequest(c, &input)
 	if err != nil {
+		fmt.Printf("ValidateRequest error: %v\n", err)
 		return
 	}
+
+	fmt.Printf("Validated input: %+v\n", input)
 
 	// Presigned URL oluştur
 	presignedOutput, err := h.R2Repository.GeneratePresignedURL(c.Request.Context(), types.PresignURLInput{
@@ -26,6 +33,7 @@ func (h *Handler) CreatePresignedURL(c *gin.Context) {
 	})
 
 	if err != nil {
+		fmt.Printf("GeneratePresignedURL error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   "presigned_url_failed",
@@ -33,6 +41,8 @@ func (h *Handler) CreatePresignedURL(c *gin.Context) {
 		})
 		return
 	}
+
+	fmt.Printf("PresignedOutput: %+v\n", presignedOutput)
 
 	// Veritabanında signature kaydı oluştur
 	signatureInput := types.UploadSignatureInput{
@@ -44,8 +54,11 @@ func (h *Handler) CreatePresignedURL(c *gin.Context) {
 		ExpiresAt:    presignedOutput.ExpiresAt,
 	}
 
+	fmt.Printf("SignatureInput: %+v\n", signatureInput)
+
 	signatureID, err := h.FileRepository.CreateUploadSignature(c.Request.Context(), signatureInput)
 	if err != nil {
+		fmt.Printf("CreateUploadSignature error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   "signature_creation_failed",
@@ -53,6 +66,8 @@ func (h *Handler) CreatePresignedURL(c *gin.Context) {
 		})
 		return
 	}
+
+	fmt.Printf("SignatureID: %v\n", signatureID)
 
 	// Başarılı yanıt döndür
 	c.JSON(http.StatusOK, gin.H{

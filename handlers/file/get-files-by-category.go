@@ -10,7 +10,7 @@ import (
 // GetFilesByCategory belirli kategorideki dosyaları getirir
 func (h *Handler) GetFilesByCategory(c *gin.Context) {
 	// Kategori parametresini al
-	category := c.Query("category")
+	category := c.Query("c")
 	if category == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,

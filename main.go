@@ -101,7 +101,6 @@ func main() {
 	authAPI.Use(mw.AuthMiddleware(repos.User, repos.Token))
 
 	publicFileAPI.Use(mw.RateLimiterMiddleware(10, 15*time.Minute))
-	publicFileAPI.Use(Recaptcha.Middleware())
 
 	// `start with /`
 	router.GET("/", handlers.Main.Index)
@@ -124,6 +123,8 @@ func main() {
 
 	// `start with /auth`
 	authAPI.GET("/files/category", handlers.File.GetFilesByCategory)
+	authAPI.POST("/files/presigned-url", handlers.File.CreatePresignedURL)
+	authAPI.POST("/files/confirm-upload", handlers.File.ConfirmUpload)
 	authAPI.DELETE("/files/:id", handlers.File.DeleteFile)
 
 	// 5. Sunucuyu Başlat
