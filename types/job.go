@@ -232,6 +232,7 @@ type JobSearchParams struct {
 type JobApplicationSearchParams struct {
 	JobID     uuid.UUID `form:"jobId"`
 	Status    string    `form:"status"`
+	FullName  string    `form:"fullName"`
 	Email     string    `form:"email"`
 	StartDate string    `form:"startDate"` // YYYY-MM-DD formatında
 	EndDate   string    `form:"endDate"`   // YYYY-MM-DD formatında

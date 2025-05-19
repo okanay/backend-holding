@@ -55,6 +55,12 @@ func (r *Repository) ListJobsApplications(ctx context.Context, params types.JobA
 		paramIndex++
 	}
 
+	if params.FullName != "" {
+		whereClause += fmt.Sprintf(" AND a.full_name = $%d", paramIndex)
+		args = append(args, params.FullName)
+		paramIndex++
+	}
+
 	if params.Email != "" {
 		whereClause += fmt.Sprintf(" AND a.email = $%d", paramIndex)
 		args = append(args, params.Email)
