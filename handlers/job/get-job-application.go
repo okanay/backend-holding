@@ -16,7 +16,7 @@ func (h *Handler) ListJobApplications(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
 	// Sıralama ve filtreleme parametrelerini al
-	sortBy := c.DefaultQuery("sortBy", "createdAt")
+	sortBy := c.DefaultQuery("sortBy", "created_at")
 	sortOrder := c.DefaultQuery("sortOrder", "desc")
 	status := c.DefaultQuery("status", "")
 	email := c.DefaultQuery("email", "")

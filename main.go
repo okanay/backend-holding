@@ -118,6 +118,7 @@ func main() {
 	authAPI.GET("/get-me", handlers.User.GetMe)
 	authAPI.POST("/create-new-job", handlers.Job.CreateJob)
 	authAPI.GET("/jobs", handlers.Job.ListJobs)
+	authAPI.GET("/applicants", handlers.Job.ListJobApplications)
 
 	// `start with /public/files`
 	publicFileAPI.POST("/presigned-url", handlers.File.CreatePresignedURL)
