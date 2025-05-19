@@ -38,24 +38,3 @@ CREATE TRIGGER trg_applicants_after_delete
 AFTER DELETE ON job_applications
 FOR EACH ROW
 EXECUTE FUNCTION update_applicants_count_on_delete();
-
--- Update_At için trigger'lar.
-CREATE TRIGGER update_job_postings_updated_at
-BEFORE UPDATE ON job_postings
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_job_posting_details_updated_at
-BEFORE UPDATE ON job_posting_details
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_job_categories_updated_at
-BEFORE UPDATE ON job_categories
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_job_applications_updated_at
-BEFORE UPDATE ON job_applications
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();

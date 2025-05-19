@@ -111,6 +111,7 @@ func main() {
 	publicAPI.POST("/register", handlers.User.Register)
 	publicAPI.GET("/jobs", handlers.Job.ListPublishedJobs)
 	publicAPI.GET("/jobs/:id", handlers.Job.GetJobBySlug)
+	publicAPI.POST("/jobs/:id", handlers.Job.CreateJobApplication)
 
 	// `start with /auth`
 	authAPI.GET("/logout", handlers.User.Logout)

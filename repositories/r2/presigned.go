@@ -16,22 +16,22 @@ import (
 
 // GeneratePresignedURL dosya yüklemek için presigned URL oluşturur
 func (r *Repository) GeneratePresignedURL(ctx context.Context, input types.PresignURLInput) (*types.PresignedURLOutput, error) {
-	// Dosya adı ve uzantısını ayır
 	filename := input.Filename
 	fileExt := ""
 	dotIndex := strings.LastIndex(filename, ".")
 
 	if dotIndex != -1 {
-		fileExt = filename[dotIndex:]  // .jpg, .png vb.
-		filename = filename[:dotIndex] // uzantısız dosya adı
+		fileExt = filename[dotIndex:]  // .docx
+		filename = filename[:dotIndex] // Okan-Ay---Vize
 	}
 
-	safeFilename := sanitizeFilename(input.Filename)
+	// Sadece dosya adını sanitize et
+	safeFilename := sanitizeFilename(filename)
 
 	// Rastgele hash oluştur (8 karakter)
 	hashSuffix := utils.GenerateRandomString(8)
 
-	// Final dosya adını oluştur: orijinal-dosya-adi-ABCDEF.jpg
+	// Final dosya adını oluştur: orijinal-dosya-adi-ABCDEFGH.docx
 	finalFilename := fmt.Sprintf("%s-%s%s", safeFilename, hashSuffix, fileExt)
 
 	// File category'ye göre klasör yolu oluştur

@@ -15,9 +15,28 @@ func (r *Repository) CreateJobApplication(ctx context.Context, jobID uuid.UUID, 
 	var application types.JobApplication
 
 	createQuery := `
-		INSERT INTO job_applications (job_id, full_name, email, phone, form_type, form_json, status)
-		VALUES ($1, $2, $3, $4, $5, $6, 'received')
-		RETURNING id, job_id, full_name, email, phone, form_type, form_json, status, created_at, updated_at
+		INSERT INTO job_applications (
+			job_id,
+			full_name,
+			email,
+			phone,
+			form_type,
+			form_json
+		)
+		VALUES (
+			$1, $2, $3, $4, $5, $6
+		)
+		RETURNING
+			id,
+			job_id,
+			full_name,
+			email,
+			phone,
+			form_type,
+			form_json,
+			status,
+			created_at,
+			updated_at
 	`
 
 	err := r.db.QueryRowContext(
