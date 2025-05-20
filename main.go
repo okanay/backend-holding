@@ -12,8 +12,8 @@ import (
 	c "github.com/okanay/backend-holding/configs"
 	db "github.com/okanay/backend-holding/database"
 	fh "github.com/okanay/backend-holding/handlers/file"
+	mh "github.com/okanay/backend-holding/handlers/globals"
 	jh "github.com/okanay/backend-holding/handlers/job"
-	mh "github.com/okanay/backend-holding/handlers/main"
 	uh "github.com/okanay/backend-holding/handlers/user"
 
 	"github.com/okanay/backend-holding/middlewares"
