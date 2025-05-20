@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -108,7 +109,7 @@ func (r *Repository) UpdateJob(ctx context.Context, jobID uuid.UUID, input types
 		return job, fmt.Errorf("kategoriler temizlenemedi: %w", err)
 	}
 
-	// Yeni kategorileri ekle
+	// Yeni kategorileri ekle - CreateJob'daki doğru implementasyonu kullanarak
 	if len(input.Categories) > 0 {
 		categoryQuery := `INSERT INTO job_posting_categories (job_id, category_name) VALUES `
 
@@ -120,7 +121,8 @@ func (r *Repository) UpdateJob(ctx context.Context, jobID uuid.UUID, input types
 			values = append(values, category)
 		}
 
-		categoryQuery += " " + fmt.Sprint(placeholders)
+		// strings.Join kullanarak tüm placeholders'ları virgülle birleştir
+		categoryQuery += " " + strings.Join(placeholders, ", ")
 
 		_, err = tx.ExecContext(ctx, categoryQuery, values...)
 		if err != nil {

@@ -18,6 +18,7 @@ import (
 func AuthMiddleware(ur *UserRepository.Repository, tr *TokenRepository.Repository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		accessToken, err := c.Cookie(configs.ACCESS_TOKEN_NAME)
+
 		if err != nil {
 			handleTokenRenewal(c, ur, tr)
 			return

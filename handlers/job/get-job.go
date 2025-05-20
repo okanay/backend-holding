@@ -10,7 +10,7 @@ import (
 	"github.com/okanay/backend-holding/utils"
 )
 
-func (h *Handler) GetJob(c *gin.Context) {
+func (h *Handler) GetJobByID(c *gin.Context) {
 	// İş ID'sini al
 	jobID, err := uuid.Parse(c.Param("id"))
 	if err != nil {

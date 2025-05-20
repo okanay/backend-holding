@@ -116,8 +116,14 @@ func main() {
 	// `start with /auth`
 	authAPI.GET("/logout", handlers.User.Logout)
 	authAPI.GET("/get-me", handlers.User.GetMe)
-	authAPI.POST("/create-new-job", handlers.Job.CreateJob)
+
 	authAPI.GET("/jobs", handlers.Job.ListJobs)
+	authAPI.GET("/job/:id", handlers.Job.GetJobByID)
+	authAPI.POST("/create-new-job", handlers.Job.CreateJob)
+	authAPI.PATCH("/job/:id", handlers.Job.UpdateJob)
+	authAPI.DELETE("/job/:id", handlers.Job.DeleteJob)
+	authAPI.PATCH("/job/status/:id", handlers.Job.UpdateJobStatus)
+
 	authAPI.GET("/applicants", handlers.Job.ListJobApplications)
 	authAPI.PATCH("/applicant/status/:id", handlers.Job.UpdateJobApplicationStatus)
 
