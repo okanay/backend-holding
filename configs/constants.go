@@ -6,7 +6,7 @@ import (
 
 const (
 	// Project Rules
-	PROJECT_NAME = "Heraklet Holding"
+	PROJECT_NAME = "HOI Holding"
 
 	// TIMEOUT RULES
 	REQUEST_MAX_DURATION = 20 * time.Second
@@ -27,7 +27,7 @@ const (
 	REFRESH_TOKEN_NAME     = "refresh_token"
 	ACCESS_TOKEN_NAME      = "access_token"
 	ACCESS_TOKEN_DURATION  = 5 * time.Minute
-	JWT_ISSUER             = "holding"
+	JWT_ISSUER             = "hoi holding"
 
 	// JOBS Application Rules
 	JOBS_TRACKING_SUBJECT  = "tracking_jwt"

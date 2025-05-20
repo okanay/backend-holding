@@ -7,7 +7,8 @@ import (
 
 func CorsConfig() gin.HandlerFunc {
 	var origins = []string{
-		"https://holding.vercel.app",
+		"https://testhoi.vercel.app",
+		"https://vercel.hoi.com.tr",
 	}
 
 	if gin.Mode() == gin.DebugMode {
