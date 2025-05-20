@@ -24,7 +24,7 @@ func (h *Handler) ConfirmUpload(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   "file_too_large",
-			"message": fmt.Sprintf("Dosya boyutu maksimum %d bayt (%d MB) olabilir.", maxSizeInBytes, maxSizeInBytes/(1024*1024)),
+			"message": fmt.Sprintf("File size can be a maximum of %d bytes (%d MB).", maxSizeInBytes, maxSizeInBytes/(1024*1024)),
 		})
 		return
 	}
