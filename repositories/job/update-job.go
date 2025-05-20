@@ -147,6 +147,12 @@ func (r *Repository) UpdateJob(ctx context.Context, jobID uuid.UUID, input types
 func (r *Repository) UpdateJobStatus(ctx context.Context, jobID uuid.UUID, status types.JobStatus) error {
 	defer utils.TimeTrack(time.Now(), "Job -> Update Job Status")
 
+	// Eğer silme işlemi ise SoftDeleteJob'a yönlendir
+	if status == types.JobStatusDeleted {
+		return r.SoftDeleteJob(ctx, jobID)
+	}
+
+	// Normal durum güncelleme işlemi
 	query := `
 		UPDATE job_postings
 		SET status = $1, updated_at = NOW()
