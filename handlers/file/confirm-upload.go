@@ -2,6 +2,7 @@
 package FileHandler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,17 @@ func (h *Handler) ConfirmUpload(c *gin.Context) {
 	var input types.ConfirmUploadInput
 	err := utils.ValidateRequest(c, &input)
 	if err != nil {
+		return
+	}
+
+	const maxSizeInBytes = 10 * 1024 * 1024 // 10 MB
+
+	if input.SizeInBytes > maxSizeInBytes {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "file_too_large",
+			"message": fmt.Sprintf("Dosya boyutu maksimum %d bayt (%d MB) olabilir.", maxSizeInBytes, maxSizeInBytes/(1024*1024)),
+		})
 		return
 	}
 

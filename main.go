@@ -100,7 +100,7 @@ func main() {
 	authAPI.Use(mw.RateLimiterMiddleware(120, time.Minute))
 	authAPI.Use(mw.AuthMiddleware(repos.User, repos.Token))
 
-	publicFileAPI.Use(mw.RateLimiterMiddleware(10, 15*time.Minute))
+	publicFileAPI.Use(mw.RateLimiterMiddleware(4, 120*time.Minute))
 
 	// `start with /`
 	router.GET("/", handlers.Main.Index)
