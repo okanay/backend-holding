@@ -1,11 +1,14 @@
 package JobHandler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/okanay/backend-holding/services/cache"
 	"github.com/okanay/backend-holding/types"
 	"github.com/okanay/backend-holding/utils"
 )
@@ -14,7 +17,6 @@ func (h *Handler) ListJobApplications(c *gin.Context) {
 	// Sayfalama parametrelerini al
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-
 	// Sıralama ve filtreleme parametrelerini al
 	fullName := c.DefaultQuery("fullName", "")
 	sortBy := c.DefaultQuery("sortBy", "created_at")
@@ -23,7 +25,6 @@ func (h *Handler) ListJobApplications(c *gin.Context) {
 	email := c.DefaultQuery("email", "")
 	startDate := c.DefaultQuery("startDate", "")
 	endDate := c.DefaultQuery("endDate", "")
-
 	// İş ID'sini al (opsiyonel)
 	var jobID uuid.UUID
 	jobIDStr := c.DefaultQuery("jobId", "")
@@ -34,6 +35,15 @@ func (h *Handler) ListJobApplications(c *gin.Context) {
 			utils.BadRequest(c, "Geçersiz iş ilanı ID'si")
 			return
 		}
+	}
+
+	// Cache identifier oluştur - tüm parametreleri içerir
+	cacheIdentifier := fmt.Sprintf("applications:list:p%d:l%d:fn%s:s%s:o%s:st%s:e%s:sd%s:ed%s:jid%s",
+		page, limit, fullName, sortBy, sortOrder, status, email, startDate, endDate, jobIDStr)
+
+	// Cache kontrolü - önbellekte varsa doğrudan dön
+	if h.Cache.TryCache(c, cache.GroupJobs, cacheIdentifier) {
+		return
 	}
 
 	// Parametreleri SearchParams yapısına dönüştür
@@ -57,7 +67,8 @@ func (h *Handler) ListJobApplications(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	// Yanıt hazırla
+	response := gin.H{
 		"success": true,
 		"data": gin.H{
 			"applications": applications,
@@ -68,7 +79,17 @@ func (h *Handler) ListJobApplications(c *gin.Context) {
 				"totalPages":  (total + limit - 1) / limit,
 			},
 		},
-	})
+	}
+
+	// Yanıtı önbelleğe al - başvuru listeleri için daha kısa TTL kullanıyoruz
+	// çünkü yeni başvurular sık eklenebilir
+	h.Cache.SaveCacheTTL(response, cache.GroupJobs, cacheIdentifier, 3*60*time.Second) // 3 dakika
+
+	// Cache header'ı ekle
+	c.Header("X-Cache", "MISS")
+
+	// Yanıtı döndür
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) GetJobApplication(c *gin.Context) {
@@ -76,6 +97,14 @@ func (h *Handler) GetJobApplication(c *gin.Context) {
 	applicationID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		utils.BadRequest(c, "Geçersiz başvuru ID'si")
+		return
+	}
+
+	// Cache identifier oluştur
+	cacheIdentifier := "application:detail:" + applicationID.String()
+
+	// Cache kontrolü - önbellekte varsa doğrudan dön
+	if h.Cache.TryCache(c, cache.GroupJobs, cacheIdentifier) {
 		return
 	}
 
@@ -92,10 +121,20 @@ func (h *Handler) GetJobApplication(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	// Yanıt hazırla
+	response := gin.H{
 		"success": true,
 		"data":    application,
-	})
+	}
+
+	// Yanıtı önbelleğe al
+	h.Cache.SaveCache(response, cache.GroupJobs, cacheIdentifier)
+
+	// Cache header'ı ekle
+	c.Header("X-Cache", "MISS")
+
+	// Yanıtı döndür
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) GetJobApplicationsByEmail(c *gin.Context) {
@@ -112,6 +151,14 @@ func (h *Handler) GetJobApplicationsByEmail(c *gin.Context) {
 		return
 	}
 
+	// Cache identifier oluştur
+	cacheIdentifier := "applications:email:" + email
+
+	// Cache kontrolü - önbellekte varsa doğrudan dön
+	if h.Cache.TryCache(c, cache.GroupJobs, cacheIdentifier) {
+		return
+	}
+
 	// Başvuruları getir
 	applications, err := h.JobRepository.GetJobApplicationsByEmail(c.Request.Context(), email)
 	if err != nil {
@@ -119,8 +166,18 @@ func (h *Handler) GetJobApplicationsByEmail(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	// Yanıt hazırla
+	response := gin.H{
 		"success": true,
 		"data":    applications,
-	})
+	}
+
+	// Yanıtı önbelleğe al - kullanıcı kendi başvurularını görmek için sık sık kontrol edebilir
+	h.Cache.SaveCacheTTL(response, cache.GroupJobs, cacheIdentifier, 5*60*time.Second) // 5 dakika
+
+	// Cache header'ı ekle
+	c.Header("X-Cache", "MISS")
+
+	// Yanıtı döndür
+	c.JSON(http.StatusOK, response)
 }

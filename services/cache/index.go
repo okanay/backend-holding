@@ -2,21 +2,27 @@
 package cache
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-// ---- Veri Yapıları ----
+// Cache grupları - gerektiğinde ekleyebilirsiniz
+const (
+	GroupJobs = "jobs"
+)
 
-// Cache genel amaçlı bir önbellek yapısı
+// Cache in-memory önbellekleme için basit bir yapı
 type Cache struct {
 	mu              sync.RWMutex
 	data            map[string]cacheItem
 	ttl             time.Duration
 	stopCleanup     chan struct{}
-	lastCleanupTime time.Time     // Son temizleme zamanı
-	cleanupInterval time.Duration // Temizleme aralığı
-	startTime       time.Time     // Cache başlatma zamanı
+	cleanupInterval time.Duration
 }
 
 // cacheItem önbellekteki bir veriyi ve metadata'sını temsil eder
@@ -26,135 +32,106 @@ type cacheItem struct {
 	ttl      time.Duration // Opsiyonel TTL
 }
 
-// ---- Temel İşlemler ----
-
-// NewCache yeni bir önbellek oluşturur
+// NewCache yeni bir cache instance'ı oluşturur
 func NewCache(ttl time.Duration) *Cache {
 	cache := &Cache{
 		data:            make(map[string]cacheItem),
 		ttl:             ttl,
 		stopCleanup:     make(chan struct{}),
-		cleanupInterval: 30 * time.Minute, // Varsayılan temizleme aralığı
-		startTime:       time.Now(),
+		cleanupInterval: 30 * time.Minute,
 	}
 
-	// Otomatik temizleme goroutine'ini başlat
+	// Periyodik temizleme başlat
 	go cache.startCleanupRoutine()
 
 	return cache
 }
 
-// Set verilen anahtarla bir değeri önbelleğe kaydeder
-func (c *Cache) Set(key string, value []byte) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+// TryCache önbellekteki veriyi kontrol eder ve varsa yanıt olarak döndürür
+// Eğer önbellekte yoksa false döner ve normal işlem sürdürülür
+func (c *Cache) TryCache(ctx *gin.Context, group, identifier string) bool {
+	cacheKey := fmt.Sprintf("%s:%s", group, identifier)
 
-	c.data[key] = cacheItem{
-		value:    value,
-		cachedAt: time.Now(),
-	}
-}
-
-// SetWithTTL özel TTL ile bir değeri önbelleğe kaydeder
-func (c *Cache) SetWithTTL(key string, value []byte, ttl time.Duration) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.data[key] = cacheItem{
-		value:    value,
-		cachedAt: time.Now(),
-		ttl:      ttl,
-	}
-}
-
-// Get bir anahtara karşılık gelen değeri önbellekten döndürür
-func (c *Cache) Get(key string) ([]byte, bool) {
 	c.mu.RLock()
-	item, exists := c.data[key]
+	item, exists := c.data[cacheKey]
 	c.mu.RUnlock()
 
 	if !exists {
-		return nil, false
+		return false
 	}
 
+	// TTL kontrolü
+	now := time.Now()
+
 	// Özel TTL kontrolü
-	if item.ttl > 0 && time.Since(item.cachedAt) > item.ttl {
-		// TTL dolmuş, veriyi sil ve false dön
+	if item.ttl > 0 && now.Sub(item.cachedAt) > item.ttl {
 		c.mu.Lock()
-		delete(c.data, key)
+		delete(c.data, cacheKey)
 		c.mu.Unlock()
-		return nil, false
+		return false
 	}
 
 	// Genel TTL kontrolü
-	if time.Since(item.cachedAt) > c.ttl {
-		return nil, false
+	if now.Sub(item.cachedAt) > c.ttl {
+		c.mu.Lock()
+		delete(c.data, cacheKey)
+		c.mu.Unlock()
+		return false
 	}
 
-	return item.value, true
+	// Cache hit - önbellekteki veriyi dön
+	ctx.Data(http.StatusOK, "application/json", item.value)
+	ctx.Header("X-Cache", "HIT")
+	return true
 }
 
-// GetAllWithPrefix belirli bir önekle başlayan tüm anahtarları ve değerlerini döndürür
-func (c *Cache) GetAllWithPrefix(prefix string) map[string][]byte {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	result := make(map[string][]byte)
-	for key, item := range c.data {
-		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-			// TTL kontrolü
-			if item.ttl > 0 && time.Since(item.cachedAt) > item.ttl {
-				continue // Süresi dolmuş
-			}
-
-			if time.Since(item.cachedAt) > c.ttl {
-				continue // Genel TTL süresi dolmuş
-			}
-
-			result[key] = item.value
-		}
+// SaveCache yanıtı önbelleğe alır
+func (c *Cache) SaveCache(response any, group, identifier string) error {
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		return err
 	}
 
-	return result
+	cacheKey := fmt.Sprintf("%s:%s", group, identifier)
+
+	c.mu.Lock()
+	c.data[cacheKey] = cacheItem{
+		value:    jsonData,
+		cachedAt: time.Now(),
+	}
+	c.mu.Unlock()
+
+	return nil
 }
 
-// Clear tüm önbelleği temizler
-func (c *Cache) Clear() {
+// SaveCacheTTL özel TTL ile yanıtı önbelleğe alır
+func (c *Cache) SaveCacheTTL(response any, group, identifier string, ttl time.Duration) error {
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		return err
+	}
+
+	cacheKey := fmt.Sprintf("%s:%s", group, identifier)
+
+	c.mu.Lock()
+	c.data[cacheKey] = cacheItem{
+		value:    jsonData,
+		cachedAt: time.Now(),
+		ttl:      ttl,
+	}
+	c.mu.Unlock()
+
+	return nil
+}
+
+// ClearGroup bir grubu önbellekten temizler
+func (c *Cache) ClearGroup(group string) {
+	prefix := group + ":"
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.data = make(map[string]cacheItem)
-}
-
-// ClearExceptPrefixes belirli öneklerle başlayan anahtarlar dışındaki tüm anahtarları temizler
-func (c *Cache) ClearExceptPrefixes(prefixes []string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	keysToDelete := make([]string, 0)
-	for key := range c.data {
-		keep := false
-		for _, prefix := range prefixes {
-			if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
-				keep = true
-				break
-			}
-		}
-		if !keep {
-			keysToDelete = append(keysToDelete, key)
-		}
-	}
-
-	for _, key := range keysToDelete {
-		delete(c.data, key)
-	}
-}
-
-// ClearPrefix belirli bir önekle başlayan tüm anahtarları temizler
-func (c *Cache) ClearPrefix(prefix string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
+	// Belirli bir önekle başlayan tüm anahtarları temizle
 	for key := range c.data {
 		if len(key) >= len(prefix) && key[:len(prefix)] == prefix {
 			delete(c.data, key)
@@ -162,17 +139,19 @@ func (c *Cache) ClearPrefix(prefix string) {
 	}
 }
 
-// Delete bir anahtarı önbellekten siler
-func (c *Cache) Delete(key string) {
+// ClearAll tüm önbelleği temizler
+func (c *Cache) ClearAll() {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	delete(c.data, key)
+	c.data = make(map[string]cacheItem)
+	c.mu.Unlock()
 }
 
-// ---- Timer İşlemleri ----
+// Stop temizleme goroutine'ini durdurur
+func (c *Cache) Stop() {
+	close(c.stopCleanup)
+}
 
-// startCleanupRoutine temizleme rutinini başlatır
+// startCleanupRoutine periyodik temizleme rutini
 func (c *Cache) startCleanupRoutine() {
 	ticker := time.NewTicker(c.cleanupInterval)
 	defer ticker.Stop()
@@ -180,22 +159,20 @@ func (c *Cache) startCleanupRoutine() {
 	for {
 		select {
 		case <-ticker.C:
-			c.mu.Lock()
-			c.lastCleanupTime = time.Now()
-			c.mu.Unlock()
-			c.cleanupExpiredItems()
+			c.cleanExpiredItems()
 		case <-c.stopCleanup:
 			return
 		}
 	}
 }
 
-// cleanupExpiredItems süresi dolmuş cache item'larını temizler
-func (c *Cache) cleanupExpiredItems() {
+// cleanExpiredItems süresi dolmuş cache öğelerini temizler
+func (c *Cache) cleanExpiredItems() {
+	now := time.Now()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	now := time.Now()
 	for key, item := range c.data {
 		// Özel TTL kontrolü
 		if item.ttl > 0 && now.Sub(item.cachedAt) > item.ttl {
@@ -208,9 +185,4 @@ func (c *Cache) cleanupExpiredItems() {
 			delete(c.data, key)
 		}
 	}
-}
-
-// Stop cleanup goroutine'ini durdurur (graceful shutdown için)
-func (c *Cache) Stop() {
-	close(c.stopCleanup)
 }

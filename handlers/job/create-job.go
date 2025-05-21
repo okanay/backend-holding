@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/okanay/backend-holding/services/cache"
 	"github.com/okanay/backend-holding/types"
 	"github.com/okanay/backend-holding/utils"
 )
@@ -30,6 +31,7 @@ func (h *Handler) CreateJob(c *gin.Context) {
 		return
 	}
 
+	h.Cache.ClearGroup(cache.GroupJobs)
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "İş ilanı başarıyla oluşturuldu",

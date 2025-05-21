@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/okanay/backend-holding/services/cache"
 	"github.com/okanay/backend-holding/utils"
 )
 
@@ -32,6 +33,7 @@ func (h *Handler) DeleteJob(c *gin.Context) {
 		message = "İş ilanı tamamen silindi"
 	}
 
+	h.Cache.ClearGroup(cache.GroupJobs)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": message,

@@ -51,17 +51,17 @@ type Handlers struct {
 func main() {
 	// 1. Çevresel Değişkenleri Yükle
 	if err := godotenv.Load(".env"); err != nil {
-		log.Println("[ENV] 🚫: .env dosyası yüklenemedi, ortam değişkenleri kullanılacak 🌎")
+		log.Println("[ENV]: .env file could not be loaded, environment variables will be used")
 	} else {
-		log.Println("[ENV] ✅: .env dosyası başarıyla yüklendi.")
+		log.Println("[ENV]: .env file loaded successfully.")
 	}
 
 	// 2. Veritabanı Bağlantısı Kur
 	sqlDB, err := db.Init(os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("[DATABASE] 🚫: Veritabanına bağlanırken hata: %v", err)
+		log.Fatalf("[DATABASE]: Error connecting to the database: %v", err)
 	} else {
-		log.Println("[DATABASE] ✅: Veritabanı bağlantısı başarıyla kuruldu")
+		log.Println("[DATABASE]: Database connection established successfully")
 		defer sqlDB.Close()
 	}
 
@@ -71,8 +71,8 @@ func main() {
 
 	// 3. Servisleri ve Handler'ları Başlat
 	repos := initRepositories(sqlDB)
-	handlers := initHandlers(repos)
-	_ = initServices()
+	services := initServices()
+	handlers := initHandlers(repos, services)
 
 	// 4. Router ve Middleware Yapılandırması
 	router := gin.Default()
@@ -172,12 +172,12 @@ func initServices() Services {
 }
 
 // Handler'ların başlatılması
-func initHandlers(repos Repositories) Handlers {
+func initHandlers(repos Repositories, services Services) Handlers {
 	return Handlers{
 		Main: mh.NewHandler(),
 		User: uh.NewHandler(repos.User, repos.Token),
 		File: fh.NewHandler(repos.File, repos.R2),
-		Job:  jh.NewHandler(repos.File, repos.R2, repos.Job),
+		Job:  jh.NewHandler(repos.File, repos.R2, repos.Job, services.BlogCache),
 	}
 }
 
