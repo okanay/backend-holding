@@ -38,9 +38,8 @@ type Repositories struct {
 }
 
 type Services struct {
-	BlogCache *cache.Cache
+	Cache cache.CacheService
 }
-
 type Handlers struct {
 	Main *mh.Handler
 	User *uh.Handler
@@ -162,12 +161,13 @@ func initRepositories(sqlDB *sql.DB) Repositories {
 	}
 }
 
-// Servislerin başlatılması
+// initServices fonksiyonunu da güncelle
 func initServices() Services {
-	// Cache ve servis oluştur
-	blogCache := cache.NewCache(30 * time.Minute)
+	// Cache oluştur
+	cacheService := cache.NewCacheService(1 * time.Hour)
+
 	return Services{
-		BlogCache: blogCache,
+		Cache: cacheService, // İşaretçi dönüştürme yapmadan doğrudan atama
 	}
 }
 
@@ -177,7 +177,7 @@ func initHandlers(repos Repositories, services Services) Handlers {
 		Main: mh.NewHandler(),
 		User: uh.NewHandler(repos.User, repos.Token),
 		File: fh.NewHandler(repos.File, repos.R2),
-		Job:  jh.NewHandler(repos.File, repos.R2, repos.Job, services.BlogCache),
+		Job:  jh.NewHandler(repos.File, repos.R2, repos.Job, services.Cache),
 	}
 }
 
