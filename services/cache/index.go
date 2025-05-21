@@ -44,9 +44,14 @@ func NewCacheService(defaultTTL time.Duration) CacheService {
 		redisPassword := os.Getenv("REDIS_PASSWORD")
 		redisDB := 0 // Varsayılan DB
 
+		fmt.Println("🚀 [REDIS CACHE] : Starting Redis cache backend")
+		fmt.Printf("🔗 Redis address : %s\n", redisAddr)
+
 		// Redis bağlantısını oluştur ve cache servisini döndür
 		return NewRedisCache(redisAddr, redisPassword, redisDB, defaultTTL)
 	}
+
+	fmt.Println("💾 [MEMORY CACHE] : Starting in-memory cache backend")
 
 	// Redis devre dışı veya yapılandırılmamışsa in-memory cache kullan
 	return NewInMemoryCache(defaultTTL)
