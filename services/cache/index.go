@@ -31,29 +31,30 @@ type CacheService interface {
 
 // NewCacheService, ortam değişkenlerine göre uygun cache servisini döndürür
 func NewCacheService(defaultTTL time.Duration) CacheService {
-	// Ortam değişkenlerinden Redis yapılandırmasını al
+	// Ortam değişkenlerini başta oku
 	useRedis := os.Getenv("USE_REDIS")
+	redisAddr := os.Getenv("REDIS_ADDR")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisDBStr := os.Getenv("REDIS_DB")
+
+	// Varsayılan değerler ata
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
+	redisDB := 0
+	if redisDBStr != "" {
+		fmt.Sscanf(redisDBStr, "%d", &redisDB)
+	}
 
 	// Redis kullanılacak mı?
 	if useRedis == "true" {
-		redisAddr := os.Getenv("REDIS_ADDR")
-		if redisAddr == "" {
-			redisAddr = "localhost:6379" // Varsayılan adres
-		}
-
-		redisPassword := os.Getenv("REDIS_PASSWORD")
-		redisDB := 0 // Varsayılan DB
-
 		fmt.Println("🚀 [REDIS CACHE] : Starting Redis cache backend")
 		fmt.Printf("🔗 Redis address : %s\n", redisAddr)
-
-		// Redis bağlantısını oluştur ve cache servisini döndür
 		return NewRedisCache(redisAddr, redisPassword, redisDB, defaultTTL)
 	}
 
 	fmt.Println("💾 [MEMORY CACHE] : Starting in-memory cache backend")
-
-	// Redis devre dışı veya yapılandırılmamışsa in-memory cache kullan
 	return NewInMemoryCache(defaultTTL)
 }
 
