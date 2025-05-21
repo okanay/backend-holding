@@ -32,7 +32,7 @@ type CacheService interface {
 // NewCacheService, ortam değişkenlerine göre uygun cache servisini döndürür
 func NewCacheService(defaultTTL time.Duration) CacheService {
 	// Ortam değişkenlerini başta oku
-	useRedis := os.Getenv("USE_REDIS")
+	useRedis := os.Getenv("REDIS_IS_ACTIVE")
 	redisAddr := os.Getenv("REDIS_ADDR")
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 	redisDBStr := os.Getenv("REDIS_DB")
