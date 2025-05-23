@@ -27,10 +27,7 @@ func (r *Repository) CreateContent(ctx context.Context, input types.ContentInput
 	defer tx.Rollback()
 
 	// Identifier belirle - eğer gönderilmemişse yeni oluştur
-	identifier := uuid.New()
-	if input.Identifier != nil && *input.Identifier != uuid.Nil {
-		identifier = *input.Identifier
-	}
+	var identifier string
 
 	// DetailsJSON'ı hazırla
 	var detailsJSON sql.NullString

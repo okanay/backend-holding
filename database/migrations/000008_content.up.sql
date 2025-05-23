@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS contents (
     id UUID DEFAULT uuid_generate_v4 () PRIMARY KEY,
     user_id UUID REFERENCES users (id) ON DELETE SET NULL,
     slug TEXT NOT NULL,
-    identifier UUID NOT NULL,
+    identifier TEXT NOT NULL,
     language TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,

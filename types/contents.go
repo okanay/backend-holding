@@ -30,7 +30,7 @@ type Content struct {
 	ID          uuid.UUID     `db:"id" json:"id"`
 	UserID      *uuid.UUID    `db:"user_id" json:"userId,omitempty"`
 	Slug        string        `db:"slug" json:"slug"`
-	Identifier  uuid.UUID     `db:"identifier" json:"identifier"`
+	Identifier  string        `db:"identifier" json:"identifier"`
 	Language    string        `db:"language" json:"language"`
 	Title       string        `db:"title" json:"title"`
 	Description *string       `db:"description" json:"description,omitempty"`
@@ -52,7 +52,7 @@ type Content struct {
 type ContentView struct {
 	ID          uuid.UUID       `json:"id"`
 	Slug        string          `json:"slug"`
-	Identifier  uuid.UUID       `json:"identifier"`
+	Identifier  string          `json:"identifier"`
 	Language    string          `json:"language"`
 	Title       string          `json:"title"`
 	Description *string         `json:"description,omitempty"`
