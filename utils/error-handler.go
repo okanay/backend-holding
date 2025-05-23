@@ -215,6 +215,18 @@ func BadRequest(c *gin.Context, message string) {
 	})
 }
 
+// InternalError handles internal server errors
+func InternalError(c *gin.Context, message string) {
+	if message == "" {
+		message = "Bilinmeyen sunucu hatası."
+	}
+	c.JSON(http.StatusInternalServerError, ErrorResponse{
+		Success: false,
+		Error:   "internal_error",
+		Message: message,
+	})
+}
+
 // SendError is a generic error response function
 func SendError(c *gin.Context, errorCode ErrorCode, message string) {
 	status, exists := HttpStatus[errorCode]

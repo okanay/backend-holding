@@ -11,6 +11,7 @@ import (
 
 	c "github.com/okanay/backend-holding/configs"
 	db "github.com/okanay/backend-holding/database"
+	ch "github.com/okanay/backend-holding/handlers/content"
 	fh "github.com/okanay/backend-holding/handlers/file"
 	mh "github.com/okanay/backend-holding/handlers/globals"
 	jh "github.com/okanay/backend-holding/handlers/job"
@@ -19,6 +20,7 @@ import (
 	"github.com/okanay/backend-holding/middlewares"
 	mw "github.com/okanay/backend-holding/middlewares"
 	air "github.com/okanay/backend-holding/repositories/ai"
+	cr "github.com/okanay/backend-holding/repositories/content"
 	fr "github.com/okanay/backend-holding/repositories/file"
 	jr "github.com/okanay/backend-holding/repositories/job"
 	r2r "github.com/okanay/backend-holding/repositories/r2"
@@ -29,22 +31,24 @@ import (
 )
 
 type Repositories struct {
-	User  *ur.Repository
-	Token *tr.Repository
-	AI    *air.Repository
-	File  *fr.Repository
-	R2    *r2r.Repository
-	Job   *jr.Repository
+	User    *ur.Repository
+	Token   *tr.Repository
+	AI      *air.Repository
+	File    *fr.Repository
+	R2      *r2r.Repository
+	Job     *jr.Repository
+	Content *cr.Repository
 }
 
 type Services struct {
 	Cache cache.CacheService
 }
 type Handlers struct {
-	Main *mh.Handler
-	User *uh.Handler
-	File *fh.Handler
-	Job  *jh.Handler
+	Main    *mh.Handler
+	User    *uh.Handler
+	File    *fh.Handler
+	Job     *jh.Handler
+	Content *ch.Handler
 }
 
 func main() {
@@ -108,9 +112,13 @@ func main() {
 	// `start with /public`
 	publicAPI.POST("/login", handlers.User.Login)
 	publicAPI.POST("/register", handlers.User.Register)
+
 	publicAPI.GET("/jobs", handlers.Job.ListPublishedJobs)
 	publicAPI.GET("/jobs/:id", handlers.Job.GetJobBySlug)
 	publicAPI.POST("/jobs/:id", handlers.Job.CreateJobApplication)
+
+	publicAPI.GET("/contents", handlers.Content.ListPublishedContents)
+	publicAPI.GET("/contents/:lang/:slug", handlers.Content.GetContentBySlug)
 
 	// `start with /auth`
 	authAPI.GET("/logout", handlers.User.Logout)
@@ -125,6 +133,15 @@ func main() {
 
 	authAPI.GET("/applicants", handlers.Job.ListJobApplications)
 	authAPI.PATCH("/applicant/status/:id", handlers.Job.UpdateJobApplicationStatus)
+
+	authAPI.GET("/contents", handlers.Content.ListContents)
+	authAPI.GET("/content/:id", handlers.Content.GetContentByID)
+	authAPI.PATCH("/content/restore/:id", handlers.Content.RestoreContent)
+
+	authAPI.POST("/content", handlers.Content.CreateContent)
+	authAPI.PATCH("/content/:id", handlers.Content.UpdateContent)
+	authAPI.DELETE("/content/:id", handlers.Content.DeleteContent)
+	authAPI.PATCH("/content/status/:id", handlers.Content.UpdateContentStatus)
 
 	// `start with /public/files`
 	publicFileAPI.POST("/presigned-url", handlers.File.CreatePresignedURL)
@@ -144,11 +161,12 @@ func main() {
 // Repository'lerin başlatılması
 func initRepositories(sqlDB *sql.DB) Repositories {
 	return Repositories{
-		User:  ur.NewRepository(sqlDB),
-		Token: tr.NewRepository(sqlDB),
-		AI:    air.NewRepository(os.Getenv("OPENAI_API_KEY")),
-		File:  fr.NewRepository(sqlDB),
-		Job:   jr.NewRepository(sqlDB),
+		User:    ur.NewRepository(sqlDB),
+		Token:   tr.NewRepository(sqlDB),
+		AI:      air.NewRepository(os.Getenv("OPENAI_API_KEY")),
+		File:    fr.NewRepository(sqlDB),
+		Job:     jr.NewRepository(sqlDB),
+		Content: cr.NewRepository(sqlDB),
 		R2: r2r.NewRepository(
 			os.Getenv("R2_ACCOUNT_ID"),
 			os.Getenv("R2_ACCESS_KEY_ID"),
@@ -174,10 +192,11 @@ func initServices() Services {
 // Handler'ların başlatılması
 func initHandlers(repos Repositories, services Services) Handlers {
 	return Handlers{
-		Main: mh.NewHandler(),
-		User: uh.NewHandler(repos.User, repos.Token),
-		File: fh.NewHandler(repos.File, repos.R2),
-		Job:  jh.NewHandler(repos.File, repos.R2, repos.Job, services.Cache),
+		Main:    mh.NewHandler(),
+		User:    uh.NewHandler(repos.User, repos.Token),
+		File:    fh.NewHandler(repos.File, repos.R2),
+		Job:     jh.NewHandler(repos.File, repos.R2, repos.Job, services.Cache),
+		Content: ch.NewHandler(repos.Content, services.Cache),
 	}
 }
 
