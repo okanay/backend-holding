@@ -24,6 +24,3 @@ CREATE TABLE IF NOT EXISTS files_signatures (
     completed BOOLEAN DEFAULT FALSE, -- Yükleme tamamlandı mı?
     created_at TIMESTAMPTZ DEFAULT NOW () NOT NULL
 );
-
-CREATE TRIGGER update_job_files_updated_at BEFORE
-UPDATE ON files FOR EACH ROW EXECUTE FUNCTION update_updated_at_column ();

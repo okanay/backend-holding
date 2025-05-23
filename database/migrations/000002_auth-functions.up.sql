@@ -1,12 +1,3 @@
--- Ortak updated_at güncelleme fonksiyonu
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
 -- Kullanıcı durumu değiştiğinde deleted_at alanını güncelleme
 CREATE OR REPLACE FUNCTION update_user_deleted_at()
 RETURNS TRIGGER AS $$

@@ -1,6 +1,4 @@
 -- Fonksiyonları kaldır
-DROP FUNCTION IF EXISTS update_updated_at_column () CASCADE;
-
 DROP FUNCTION IF EXISTS update_user_deleted_at () CASCADE;
 
 DROP FUNCTION IF EXISTS update_refresh_tokens_on_user_status () CASCADE;

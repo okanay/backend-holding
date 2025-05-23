@@ -12,13 +12,3 @@ BEGIN
   WHERE expires_at < NOW();
 END;
 $$ LANGUAGE plpgsql;
-
-CREATE TRIGGER jobs_tracking_sessions_updated_at
-BEFORE UPDATE ON jobs_tracking_sessions
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER jobs_tracking_codes_updated_at
-BEFORE UPDATE ON jobs_tracking_codes
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();

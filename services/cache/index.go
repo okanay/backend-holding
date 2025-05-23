@@ -16,7 +16,8 @@ import (
 
 // Cache grupları - gerektiğinde ekleyebilirsiniz
 const (
-	GroupJobs = "jobs"
+	GroupJobs    = "jobs"
+	GroupContent = "content"
 )
 
 // CacheService, tüm cache implementasyonları için ortak arayüz
