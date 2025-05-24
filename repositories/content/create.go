@@ -2,7 +2,6 @@ package ContentRepository
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -26,26 +25,16 @@ func (r *Repository) CreateContent(ctx context.Context, input types.ContentInput
 	}
 	defer tx.Rollback()
 
-	// Identifier belirle - eğer gönderilmemişse yeni oluştur
-	var identifier string
-
-	// DetailsJSON'ı hazırla
-	var detailsJSON sql.NullString
-	if input.DetailsJSON != nil {
-		detailsBytes, err := json.Marshal(input.DetailsJSON)
-		if err != nil {
-			return content, fmt.Errorf("details_json hazırlanamadı: %w", err)
-		}
-		detailsJSON = sql.NullString{
-			String: string(detailsBytes),
-			Valid:  true,
-		}
-	}
-
 	// ContentJSON'ı hazırla (zorunlu alan)
 	contentJSONBytes, err := json.Marshal(input.ContentJSON)
 	if err != nil {
 		return content, fmt.Errorf("content_json hazırlanamadı: %w", err)
+	}
+
+	// details_json'ı hazırla (JSONB formatında)
+	detailsJSONBytes, err := json.Marshal(input.DetailsJSON)
+	if err != nil {
+		return content, fmt.Errorf("details_json hazırlanamadı: %w", err)
 	}
 
 	// Status belirle - default: draft
@@ -71,13 +60,13 @@ func (r *Repository) CreateContent(ctx context.Context, input types.ContentInput
 	err = tx.QueryRowContext(ctx, query,
 		userID,
 		input.Slug,
-		identifier,
+		input.Identifier,
 		input.Language,
 		input.Title,
 		input.Description,
 		input.Category,
 		input.ImageURL,
-		detailsJSON,
+		string(detailsJSONBytes),
 		string(contentJSONBytes),
 		input.ContentHTML,
 		status,

@@ -3,7 +3,6 @@ package ContentRepository
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -62,23 +61,15 @@ func (r *Repository) UpdateContent(ctx context.Context, contentID uuid.UUID, inp
 		paramIndex++
 	}
 
-	if input.DetailsJSON != nil {
-		detailsBytes, err := json.Marshal(input.DetailsJSON)
-		if err != nil {
-			return content, fmt.Errorf("details_json hazırlanamadı: %w", err)
-		}
+	if input.DetailsJSON != "" {
 		setClauses = append(setClauses, fmt.Sprintf("details_json = $%d", paramIndex))
-		args = append(args, sql.NullString{String: string(detailsBytes), Valid: true})
+		args = append(args, sql.NullString{String: input.DetailsJSON, Valid: true})
 		paramIndex++
 	}
 
-	if input.ContentJSON != nil {
-		contentBytes, err := json.Marshal(input.ContentJSON)
-		if err != nil {
-			return content, fmt.Errorf("content_json hazırlanamadı: %w", err)
-		}
+	if input.ContentJSON != "" {
 		setClauses = append(setClauses, fmt.Sprintf("content_json = $%d", paramIndex))
-		args = append(args, string(contentBytes))
+		args = append(args, input.ContentJSON)
 		paramIndex++
 	}
 

@@ -137,7 +137,6 @@ func main() {
 	authAPI.GET("/contents", handlers.Content.ListContents)
 	authAPI.GET("/content/:id", handlers.Content.GetContentByID)
 	authAPI.PATCH("/content/restore/:id", handlers.Content.RestoreContent)
-
 	authAPI.POST("/content", handlers.Content.CreateContent)
 	authAPI.PATCH("/content/:id", handlers.Content.UpdateContent)
 	authAPI.DELETE("/content/:id", handlers.Content.DeleteContent)

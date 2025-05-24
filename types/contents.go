@@ -70,22 +70,18 @@ type ContentView struct {
 // INPUT MODELLERİ (İstekler İçin)
 // ====================
 
-// ContentInput - Yeni içerik oluşturma veya güncelleme için ortak input yapısı.
-// Güncelleme yaparken, sadece gönderilen alanlar güncellenir (PATCH metodolojisi).
-// Oluşturma sırasında identifier boş gönderilebilir, backend yeni bir tane oluşturur
-// veya bir identifier'a bağlı yeni dil versiyonu ekleniyorsa identifier dolu gönderilir.
 type ContentInput struct {
-	Slug        string          `json:"slug" binding:"required,min=3,max=255"`
-	Identifier  *uuid.UUID      `json:"identifier,omitempty"`
-	Language    string          `json:"language" binding:"required,min=2,max=10"`
-	Title       string          `json:"title" binding:"required,min=3,max=255"`
-	Description *string         `json:"description,omitempty"`
-	Category    string          `json:"category" binding:"required"`
-	ImageURL    *string         `json:"imageUrl,omitempty" binding:"omitempty,url"`
-	DetailsJSON *map[string]any `json:"detailsJson,omitempty"`
-	ContentJSON map[string]any  `json:"contentJson" binding:"required"`
-	ContentHTML string          `json:"contentHtml" binding:"required"`
-	Status      ContentStatus   `json:"status,omitempty" binding:"omitempty,oneof=draft published closed deleted"`
+	Slug        string        `json:"slug" binding:"required,min=3,max=255"`
+	Identifier  string        `json:"identifier" binding:"required,min=3,max=255"`
+	Language    string        `json:"language" binding:"required,min=2,max=10"`
+	Title       string        `json:"title" binding:"required,min=3,max=255"`
+	Description string        `json:"description,omitempty"`
+	Category    string        `json:"category" binding:"required"`
+	ImageURL    string        `json:"imageUrl,omitempty" binding:"omitempty,url"`
+	DetailsJSON string        `json:"detailsJson,omitempty"`
+	ContentJSON string        `json:"contentJson" binding:"required"`
+	ContentHTML string        `json:"contentHtml" binding:"required"`
+	Status      ContentStatus `json:"status,omitempty" binding:"omitempty,oneof=draft published closed deleted"`
 }
 
 // ContentStatusInput - Sadece içerik durumunu güncellemek için input.
