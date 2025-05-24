@@ -83,31 +83,22 @@ func (h *Handler) GetContentBySlug(c *gin.Context) {
 	}
 
 	// İstenen dili bul
-	var requestedContent *types.Content
-	var alternates []gin.H
+	var requestedData *types.Content
+	var alternates []types.Content
 
 	for _, content := range contents {
-		if strings.ToLower(content.Language) == lang {
-			requestedContent = &content
+		if content.Language == lang {
+			requestedData = &content
 		} else {
-			alternates = append(alternates, gin.H{
-				"language": content.Language,
-				"slug":     content.Slug,
-				"title":    content.Title,
-			})
+			alternates = append(alternates, content)
 		}
-	}
-
-	if requestedContent == nil {
-		utils.NotFound(c, fmt.Sprintf("İçerik '%s' dilinde bulunamadı", lang))
-		return
 	}
 
 	// Response oluştur
 	response := gin.H{
 		"success": true,
 		"data": gin.H{
-			"content":    mapContentToView(*requestedContent),
+			"requested":  requestedData,
 			"alternates": alternates,
 		},
 	}

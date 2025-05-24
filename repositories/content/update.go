@@ -43,21 +43,33 @@ func (r *Repository) UpdateContent(ctx context.Context, contentID uuid.UUID, inp
 		paramIndex++
 	}
 
+	if input.Identifier != "" {
+		setClauses = append(setClauses, fmt.Sprintf("identifier = $%d", paramIndex))
+		args = append(args, input.Identifier)
+		paramIndex++
+	}
+
+	if input.Language != "" {
+		setClauses = append(setClauses, fmt.Sprintf("language = $%d", paramIndex))
+		args = append(args, input.Language)
+		paramIndex++
+	}
+
 	if input.Title != "" {
 		setClauses = append(setClauses, fmt.Sprintf("title = $%d", paramIndex))
 		args = append(args, input.Title)
 		paramIndex++
 	}
 
-	if input.Description != nil {
+	if input.Description != "" {
 		setClauses = append(setClauses, fmt.Sprintf("description = $%d", paramIndex))
-		args = append(args, *input.Description)
+		args = append(args, input.Description)
 		paramIndex++
 	}
 
-	if input.ImageURL != nil {
+	if input.ImageURL != "" {
 		setClauses = append(setClauses, fmt.Sprintf("image_url = $%d", paramIndex))
-		args = append(args, *input.ImageURL)
+		args = append(args, input.ImageURL)
 		paramIndex++
 	}
 

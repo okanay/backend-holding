@@ -2,9 +2,7 @@ package ContentHandler
 
 import (
 	"encoding/json"
-	"strings"
 
-	"github.com/gin-gonic/gin"
 	cr "github.com/okanay/backend-holding/repositories/content"
 	"github.com/okanay/backend-holding/services/cache"
 	"github.com/okanay/backend-holding/types"
@@ -67,37 +65,4 @@ func mapContentsToViews(contents []types.Content) []types.ContentView {
 		views = append(views, mapContentToView(content))
 	}
 	return views
-}
-
-func filterPublishedContents(contents []types.Content) []types.Content {
-	var published []types.Content
-	for _, content := range contents {
-		if content.Status == types.ContentStatusPublished {
-			published = append(published, content)
-		}
-	}
-	return published
-}
-
-func findContentByLanguage(contents []types.Content, language string) *types.Content {
-	for _, content := range contents {
-		if strings.ToLower(content.Language) == language {
-			return &content
-		}
-	}
-	return nil
-}
-
-func buildAlternateLanguages(contents []types.Content, excludeLang string) []gin.H {
-	var alternates []gin.H
-	for _, content := range contents {
-		if strings.ToLower(content.Language) != excludeLang {
-			alternates = append(alternates, gin.H{
-				"language": strings.ToLower(content.Language),
-				"slug":     content.Slug,
-				"title":    content.Title,
-			})
-		}
-	}
-	return alternates
 }
